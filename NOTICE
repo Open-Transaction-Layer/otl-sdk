@@ -1,0 +1,36 @@
+OTL Identity
+Copyright 2026 The Open Transaction Layer Contributors
+
+This product includes software developed by the Open Transaction Layer
+project (https://github.com/Open-Transaction-Layer).
+
+--------------------------------------------------------------------------
+Third-party material redistributed with this project
+--------------------------------------------------------------------------
+
+packages/core/test/vectors/didwebvh-test-suite/
+
+    did:webvh conformance test vectors, vendored from the
+    didwebvh-test-suite maintained by the Decentralized Identity Foundation.
+
+    Source:  https://github.com/decentralized-identity/didwebvh-test-suite
+    Commit:  0f03983c61ff3ed80d37239105d5b1a02e3f13dd (2026-08-26)
+    Licence: Apache License 2.0, reproduced in full alongside the vectors at
+             packages/core/test/vectors/didwebvh-test-suite/LICENSE
+
+    These files are test fixtures. They are redistributed unmodified and are
+    not compiled into, or shipped inside, any published package.
+
+packages/core/test/contexts/credentials-v2.jsonld
+
+    The JSON-LD context for the W3C Verifiable Credentials Data Model v2.0,
+    redistributed unmodified.
+
+    Source:  https://www.w3.org/ns/credentials/v2
+    Licence: W3C Software and Document License,
+             https://www.w3.org/copyright/software-license-2023/
+             Copyright (c) World Wide Web Consortium.
+
+    This file is a test fixture that lets the JSON-LD tests expand credentials
+    without a network request. It is not compiled into, or shipped inside, any
+    published package.

@@ -1,0 +1,20 @@
+# The @Open-Transaction-Layer/maintainers team must exist in the organisation
+# for this file to take effect, because GitHub silently ignores an owner that
+# does not exist. It blocks a merge only while the main ruleset requires review
+# from code owners.
+*                       @Open-Transaction-Layer/maintainers
+
+# Paths that decide what runs in CI, what gets installed and what gets
+# published. They are listed explicitly so that a change to any of them is
+# visibly a change to the supply chain, and so that the owner of these paths
+# can be narrowed to a smaller security group independently of the rest.
+/.github/               @Open-Transaction-Layer/maintainers
+/scripts/               @Open-Transaction-Layer/maintainers
+/.changeset/config.json @Open-Transaction-Layer/maintainers
+/.npmrc                 @Open-Transaction-Layer/maintainers
+/package.json           @Open-Transaction-Layer/maintainers
+/package-lock.json      @Open-Transaction-Layer/maintainers
+/packages/*/package.json @Open-Transaction-Layer/maintainers
+/SECURITY.md            @Open-Transaction-Layer/maintainers
+/LICENSE                @Open-Transaction-Layer/maintainers
+/NOTICE                 @Open-Transaction-Layer/maintainers

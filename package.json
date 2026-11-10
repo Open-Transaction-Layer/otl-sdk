@@ -1,0 +1,37 @@
+{
+  "name": "otl-sdk",
+  "private": true,
+  "license": "Apache-2.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "npm run sync-legal && tsc --build tsconfig.build.json",
+    "check": "npm run build && npm run typecheck && npm run lint && npm run format:check && npm test",
+    "clean": "tsc --build tsconfig.build.json --clean",
+    "format": "prettier --write \"**/*.{ts,mjs,js}\"",
+    "format:check": "prettier --check \"**/*.{ts,mjs,js}\"",
+    "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "release": "npm run build && changeset publish",
+    "sync-legal": "node scripts/sync-legal-files.mjs",
+    "test": "node --experimental-strip-types --conditions=otl-source --test packages/*/test/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "version": "changeset version && npm install --package-lock-only"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "1.0.1",
+    "@changesets/cli": "3.0.3",
+    "@eslint/js": "10.0.1",
+    "@types/node": "26.6.6",
+    "eslint": "10.14.0",
+    "globals": "17.14.0",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1"
+  }
+}

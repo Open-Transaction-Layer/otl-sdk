@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check
+    # Forks never publish, and this job holds no secrets, so the full check
+    # runs here before anything privileged starts.
+    if: github.repository == 'Open-Transaction-Layer/otl-sdk'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+
+  release:
+    name: release
+    needs: check
+    runs-on: ubuntu-latest
+    # The npm token lives only in this environment, and the environment is
+    # configured to require a maintainer's approval before the job starts, so a
+    # merge to main alone can never publish.
+    environment: release
+    permissions:
+      contents: write      # open and update the release pull request
+      pull-requests: write
+      id-token: write      # mint the OIDC token npm provenance is signed with
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      # Install scripts of dependencies never run next to the publish token.
+      - run: npm ci --ignore-scripts
+
+      # Opens a release pull request when changesets are pending, and publishes
+      # once that pull request merges. Provenance comes from the id-token
+      # permission above plus publishConfig.provenance in each manifest, so a
+      # consumer can verify a tarball was built from this repository rather
+      # than from someone's laptop.
+      - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
+        with:
+          publish: npm run release
+          version: npm run version
+          commit: 'chore(release): version packages'
+          title: 'chore(release): version packages'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
