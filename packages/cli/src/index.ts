@@ -74,7 +74,7 @@ const COMMANDS: Record<string, Handler> = {
 const HELP = `otl — OTL Identity layer tool (NON-PRODUCTION)
 
 DID
-  did create --domain <d> [--curve ed25519|p256] [--genesis-bound <fragments>]
+  did create --domain <d> [--curve ed25519|p256]
              [--no-assertion-key] [--time <iso>]
   did list | did show [--version <n>] | did validate
   did add-key --label <l> [--curve <c>] [--purpose <p>]

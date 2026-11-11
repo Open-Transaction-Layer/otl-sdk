@@ -43,6 +43,7 @@ declare module 'jsonld-signatures' {
 declare module 'jsonld' {
   const jsonld: {
     expand(input: unknown, options?: Record<string, unknown>): Promise<Record<string, unknown>[]>;
+    toRDF(input: unknown, options?: Record<string, unknown>): Promise<unknown>;
   };
   export default jsonld;
 }

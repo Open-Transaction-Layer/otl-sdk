@@ -28,8 +28,13 @@ implementations reject. Verified: reintroducing the bare-object proof defect,
 catches it.
 
 It is also permissive about undefined `parameters` members, which it neither
-rejects nor surfaces — the behaviour that made `genesisBoundKeys` appear to
-work while silently doing nothing.
+rejects nor surfaces. OTL once placed an extension property there (the
+since-removed `genesisBoundKeys`); it appeared to work while silently doing
+nothing, because `didwebvh-ts` accepts the log and then drops the property from
+the resolved metadata, so a verifier built on it would have applied none of the
+rules the property was meant to carry. `didwebvh-dart` rejects the same log
+outright. Extend the DID document, which DID Core supports by design, rather
+than `parameters`, whose set did:webvh closes with a MUST.
 
 So passing this suite means "not obviously wrong", not "conformant".
 
@@ -37,8 +42,8 @@ So passing this suite means "not obviously wrong", not "conformant".
 
 [`didwebvh-dart`](https://github.com/decentralized-identity/didwebvh-dart) is a
 separate lineage — a port of `didwebvh-java` — and is materially stricter. It is
-what caught the proof-shape defect, and what proved `genesisBoundKeys` in
-`parameters` breaks resolution.
+what caught the proof-shape defect, and what proved that an extension property
+in `parameters` breaks resolution.
 
 Not automated because it needs a Dart SDK and a repository clone. Run it when
 touching anything under `packages/core/src/didwebvh/`.
@@ -55,8 +60,7 @@ node --input-type=module -e "
   const a = await p.generateKey('addr', 'Ed25519');
   const c = await createDid({ domain: 'vasp.example.com', provider: p,
     managementKeyLabel: 'k0', preRotationKeyLabel: 'k1', versionTime: '2026-01-01T00:00:00Z',
-    keys: [keyFromKeyInfo('address-verification-key', a, ['assertionMethod'])],
-    genesisBoundKeys: ['address-verification-key'] });
+    keys: [keyFromKeyInfo('address-verification-key', a, ['assertionMethod'])] });
   const v2 = await addService({ did: c.did, previousEntry: c.entry, provider: p,
     signingKeyLabel: 'k1', nextKeyLabel: 'k2', versionTime: '2026-02-01T00:00:00Z',
     service: { id: '#whois', type: 'OtlWhois', serviceEndpoint: 'https://vasp.example.com/.well-known/whois.vp' } });
@@ -79,23 +83,14 @@ Future<void> main() async {
       jsonl, did, v.$2 == null ? null : ResolveOptions(versionNumber: v.$2));
     print(r.error != null
       ? '${v.$1} REJECTED  ${r.error}'
-      : '${v.$1} ACCEPTED  genesisBoundKeys: ${r.didDocument?.asJsonObject()['genesisBoundKeys']}');
+      : '${v.$1} ACCEPTED  ${r.didDocument?.asJsonObject()['id']}');
   }
 }
 DART
 dart run packages/didwebvh/bin/otl.dart
 ```
 
-Expected:
-
-```
-latest   ACCEPTED  genesisBoundKeys: null
-version1 ACCEPTED  genesisBoundKeys: [did:webvh:...#address-verification-key]
-```
-
-`null` at the latest version is correct — the designation is deliberately not
-carried forward, because spec 3.2.1 requires reading it from version 1 and
-repeating it later would only offer somewhere misleading to read it from.
+Expected: both versions print `ACCEPTED` followed by the DID.
 
 ## Implementations not covered
 

@@ -12,8 +12,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import jsonld from 'jsonld';
-import { OTL_IDENTITY_CONTEXT } from '@otl/core';
-import { bundledDocumentLoader, otlIdentityContextV1 } from '../src/context.ts';
+import { bundledDocumentLoader, otlIdentityContextV1, OTL_IDENTITY_CONTEXT } from '../src/context.ts';
 
 describe('bundled JSON-LD context', () => {
   it('ships the context as a package asset', () => {
@@ -66,5 +65,21 @@ describe('bundled JSON-LD context', () => {
       Object.hasOwn(node, 'https://otl.network/ns/identity#lei'),
       'lei must survive expansion rather than being dropped as an undefined term',
     );
+  });
+});
+
+describe('the bundled context is the published context', () => {
+  it('matches the digest recorded for the otl-contexts repository', async () => {
+    // The published file lives in the separate otl-contexts repository, so this
+    // digest is how the two stay in step. It must equal the entry in that
+    // repository's frozen.json once the context is frozen. A change here with
+    // no matching change there is the silent divergence bundling exists to
+    // prevent.
+    const { readFileSync } = await import('node:fs');
+    const { createHash } = await import('node:crypto');
+    const { join } = await import('node:path');
+    const bytes = readFileSync(join(import.meta.dirname, '..', 'contexts', 'otl-identity-v1.jsonld'));
+    const digest = `sha384-${createHash('sha384').update(bytes).digest('base64')}`;
+    assert.equal(digest, 'sha384-V3oJGlUOx2/U7+LYVllNNYok1MWWzua9Sk2FIyakTjucp4cPAtfH9+DQ0Z6bZ0iF');
   });
 });

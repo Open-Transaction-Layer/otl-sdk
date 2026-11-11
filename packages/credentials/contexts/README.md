@@ -28,28 +28,29 @@ With this context all 14 LEI fields and both hosting fields survive, which
 
 ## Status
 
-`https://otl.network/contexts/identity/v1` does not resolve yet. A credential
-that referenced a URL returning 404 would fail to expand at all, so the issuer
-emits `credentials/v2` only. To emit this context, add `OTL_IDENTITY_CONTEXT`
-to a credential type's `additionalContexts`.
+The identifier is `https://otl.network/contexts/identity/v1`, and the term
+namespace is `https://otl.network/ns/identity#`. The published copy lives in the
+separate `otl-contexts` repository, served from GitHub Pages, and a test in
+`packages/credentials/test/context.test.ts` pins this file's SHA-384 so the two
+copies cannot drift apart unnoticed. The `otl.network` routes that point at it
+are not in place yet, and a credential that referenced a URL returning 404
+would fail to expand at all, so the issuer emits `credentials/v2` only.
+
+To emit this context once the URL resolves, add `OTL_IDENTITY_CONTEXT` to
+`additionalContexts` on `OtlLeiCredentialType` and `OtlHostingCredentialType`,
+and update the first group in `packages/core/test/jsonld.test.ts`, which is
+written to start failing on that day.
 
 The SDK bundles this file (`@otl/credentials/context`) so that verification
 never fetches it. Fetching it would make every verification of an OTL
 credential depend on OTL's server, and would disclose the verifier's IP address
 and timing for every counterparty check.
 
-## Hosting requirements
-
-- Serve the file at a stable HTTPS URL with `Content-Type: application/ld+json`
-  and `Access-Control-Allow-Origin: *`, because browser-based verifiers need
-  the CORS header.
-- A `https://w3id.org/otl/identity/v1` identifier is preferable to an
-  `otl.network` path, because w3id is a redirect service and the identifier
-  survives the domain lapsing.
-- Treat the URL as immutable and make additive changes only, because
-  `@protected` turns a changed definition into a hard error.
-- Publish a human-readable page defining the terms, and register the context
-  in the W3C extensions registry for cross-representation interoperability.
+Credentials issued before the URL resolves are disposable proof of concept
+artefacts, so moving to another identifier later costs a reissue and nothing
+more. The context and its terms must be treated as immutable once a credential
+has been signed against them, and changes must be additive only, because
+`@protected` turns a changed definition into a hard error.
 
 ## An authoring trap
 

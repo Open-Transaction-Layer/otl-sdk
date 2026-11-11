@@ -37,24 +37,6 @@ export interface DidLogParameters {
   readonly watchers?: readonly string[];
   readonly deactivated?: boolean;
   readonly ttl?: number;
-  /**
-   * Optional OTL extension: verificationMethod fragments designated
-   * genesis-bound, written into `parameters`. Entry 1 only.
-   *
-   * **Non-conformant placement.** did:webvh requires that "the `parameters`
-   * object MUST only include properties defined in the version of the
-   * `did:webvh` DID Method specification being used", and its parameter set is
-   * closed. Tested against the reference implementations: didwebvh-dart
-   * rejects a log carrying this (reporting a misleading `SCID verification
-   * failed`), and didwebvh-ts accepts but drops it from resolved metadata, so a
-   * verifier built on it applies none of the genesis-bound rules and fails
-   * open.
-   *
-   * Validation reads this form so that a log using it is still checked, and
-   * `createDid` can emit it for comparison. Prefer
-   * {@link GENESIS_BOUND_KEYS_PROPERTY} in the genesis document.
-   */
-  readonly genesisBoundKeys?: readonly string[];
 }
 
 export interface DidLogEntry {
@@ -93,44 +75,6 @@ export interface DidDocument {
   readonly service?: readonly ServiceEntry[];
   readonly [key: string]: unknown;
 }
-
-/**
- * Property carrying the genesis-bound designation in the genesis DID document.
- *
- * Genesis-bound keys are an optional OTL extension that the Identity layer
- * specification does not define or require. A DID that designates a key
- * genesis-bound commits, in its first version, that the key's material never
- * changes and that the key is never removed. A verifier reads the designation
- * from version 1 only, because the current document cannot be trusted to
- * self-report it, and rejects a log whose current document drops or replaces a
- * designated key.
- *
- * The designation lives in the DID document rather than in `parameters`. DID
- * Core supports document extension by design (DID 1.1 §4.1), where did:webvh's
- * `parameters` object explicitly forbids it: "The parameters object MUST only
- * include properties defined in the version of the did:webvh DID Method
- * specification being used." Tested against two reference implementations,
- * the `parameters` placement is rejected by one and silently dropped by the
- * other, and the document placement is accepted and preserved by both.
- *
- * The SCID commits to the whole genesis entry, document included, so the
- * designation is tamper-evident in either placement.
- */
-export const GENESIS_BOUND_KEYS_PROPERTY = 'genesisBoundKeys';
-
-/**
- * Context defining {@link GENESIS_BOUND_KEYS_PROPERTY}.
- *
- * This URL MUST resolve to a context that actually defines the term. DID 1.1
- * §6.2.3: "Conforming consumers that process a JSON-LD representation SHOULD
- * drop all terms from a DID document that are not defined via the `@context`."
- * A placeholder URI would reintroduce the exact silent-drop failure this
- * placement exists to avoid.
- */
-export const OTL_IDENTITY_CONTEXT = 'https://otl.network/contexts/identity/v1';
-
-/** Where the genesis-bound designation is written. */
-export type GenesisBoundPlacement = 'document' | 'parameters';
 
 /** Context URIs required per OTL spec 3.1, keyed by what makes them required. */
 export const CONTEXT = {

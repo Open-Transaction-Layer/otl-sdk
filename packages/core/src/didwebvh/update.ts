@@ -76,7 +76,6 @@ export interface AppendEntryOptions {
  *
  *  - version numbers increment by one and chain to the previous entry;
  *  - `scid` appears in entry 1 only;
- *  - `genesisBoundKeys` appears in entry 1 only;
  *  - `updateKeys` and `nextKeyHashes` are explicit and non-empty;
  *  - every key in `updateKeys` was committed by the previous `nextKeyHashes`;
  *  - the signing key's curve is permitted by `profile`, and the key is
@@ -111,7 +110,7 @@ export async function appendEntry(options: AppendEntryOptions): Promise<DidLogEn
   assertCommittedByPreviousEntry(signingMultikey, previousEntry);
 
   const parameters: DidLogParameters = {
-    // `scid` and `genesisBoundKeys` are entry-1-only and deliberately absent.
+    // `scid` is entry-1-only and deliberately absent.
     // `method` is inherited from entry 1.
     updateKeys: [signingMultikey],
     nextKeyHashes: [deriveKeyHash(toPublicKeyMultibase(nextKey.publicKey))],
@@ -182,22 +181,6 @@ function assertCommittedByPreviousEntry(multikey: string, previousEntry: DidLogE
 export interface UpdateOperationOptions extends Omit<AppendEntryOptions, 'state' | 'deactivate'> {
   readonly did: string;
 }
-
-/**
- * Note on `genesisBoundKeys` across versions.
- *
- * Updates rebuild the document from its keys and services, so the genesis-bound
- * designation is NOT carried into later versions. That is deliberate. A
- * verifier reads the designation from version 1, because the current document
- * cannot be trusted to self-report it, so repeating it in later documents would
- * add no security and would offer somewhere misleading to read it from. A
- * verifier that resolves the current version sees nothing and must go to
- * version 1, which is the intended behaviour.
- *
- * Validation rejects a later document that declares a *different* set, since
- * that is what an attacker would publish to mislead a verifier reading the
- * wrong version.
- */
 
 /**
  * Refuse an operation whose `did` is not the DID the previous entry describes.

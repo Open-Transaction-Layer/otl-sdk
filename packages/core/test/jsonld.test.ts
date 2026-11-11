@@ -22,11 +22,16 @@ import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import jsonld from 'jsonld';
 import { InMemoryKeyProvider } from '@otl/keys-dev';
-import { issueCredential, OtlHostingCredentialType, OtlLeiCredentialType } from '@otl/credentials';
+import {
+  issueCredential,
+  OtlHostingCredentialType,
+  OtlLeiCredentialType,
+  OTL_IDENTITY_CONTEXT,
+} from '@otl/credentials';
 import { Bitstring, buildStatusListCredential, statusEntryFor, verifyProof } from '../src/index.ts';
 
 const HERE = import.meta.dirname;
-const OTL_CONTEXT_URL = 'https://otl.network/contexts/identity/v1';
+const OTL_CONTEXT_URL = OTL_IDENTITY_CONTEXT;
 const ISSUER = 'did:webvh:QmTestScidIssuer:lou.example.org';
 const SUBJECT = 'did:webvh:QmTestScidSubject:vasp.example.com';
 
@@ -210,7 +215,7 @@ describe('JSON-LD - the context covers OtlHostingCredential', () => {
   it('preserves both §4.14 fields and the type', async () => {
     const { credential } = await issueHostingCredential();
     const flat = await expandedText(credential);
-    for (const term of ['commonName', 'watchers', 'OtlHostingCredential']) {
+    for (const term of ['commonName', 'watcher', 'OtlHostingCredential']) {
       assert.ok(flat.includes(`identity#${term}`), `dropped: ${term}`);
     }
   });
@@ -247,5 +252,74 @@ describe('JSON-LD - the status list needs no OTL context', () => {
     for (const term of ['encodedList', 'statusPurpose', 'BitstringStatusList']) {
       assert.ok(flat.includes(term), `${term} was dropped from the status list`);
     }
+  });
+});
+
+/** N-Quads for a document, with `safe` so a dropped term or relative IRI throws. */
+const toNQuads = async (document: unknown, base?: string): Promise<string> =>
+  (await jsonld.toRDF(document, {
+    documentLoader,
+    format: 'application/n-quads',
+    safe: true,
+    ...(base === undefined ? {} : { base }),
+  })) as string;
+
+const NS = 'https://otl.network/ns/identity#';
+
+describe('JSON-LD - the RDF layer, where two implementations agree or do not', () => {
+  it('emits a statement carrying the value for all fourteen §4.9 fields, with no base IRI', async () => {
+    const { credential } = await issueLeiCredential([OTL_CONTEXT_URL]);
+    const nquads = await toNQuads(credential);
+
+    const missing = SPEC_4_9_FIELDS.filter((f) => !nquads.includes(`<${NS}${f}>`));
+    assert.deepEqual(missing, [], `no RDF statement for: ${missing.join(', ')}`);
+
+    // The two fields whose values are `{ id: "…" }` objects: the code must
+    // arrive as a literal, not as a relative IRI that vanishes without a base.
+    assert.ok(nquads.includes(`<${NS}elfCode> "XTIQ"`), 'legalForm code must be a literal');
+    assert.ok(
+      nquads.includes(`<${NS}registrationAuthorityCode> "RA000563"`),
+      'registeredAt code must be a literal',
+    );
+  });
+
+  it('derives identical RDF whatever base IRI the verifier supplies', async () => {
+    const { credential } = await issueLeiCredential([OTL_CONTEXT_URL]);
+    const lines = (text: string) => text.split('\n').sort().join('\n');
+
+    // Blank node labels are assigned in document order, so they match across runs.
+    const unset = lines(await toNQuads(credential));
+    const credentialBase = lines(await toNQuads(credential, 'https://lou.example.org/credentials/1'));
+    const unrelated = lines(await toNQuads(credential, 'https://verifier.example/inbox/'));
+    assert.equal(credentialBase, unset);
+    assert.equal(unrelated, unset);
+  });
+
+  it('keeps the hosting credential terms', async () => {
+    const hosting = {
+      '@context': ['https://www.w3.org/ns/credentials/v2', OTL_CONTEXT_URL],
+      type: ['VerifiableCredential', 'OtlHostingCredential'],
+      issuer: ISSUER,
+      validFrom: '2026-01-01T00:00:00Z',
+      credentialSubject: {
+        id: SUBJECT,
+        commonName: 'Example Participant',
+        watchers: ['https://watcher.example.org/'],
+      },
+    };
+    const nquads = await toNQuads(hosting);
+    for (const term of ['OtlHostingCredential', 'commonName', 'watcher']) {
+      assert.ok(nquads.includes(`${NS}${term}`), `${term} was dropped`);
+    }
+    assert.ok(nquads.includes('<https://watcher.example.org/>'), 'watchers must be IRIs');
+  });
+});
+
+describe('JSON-LD - issuing and verifying never touch the network', () => {
+  it('performs no context fetch beyond the bundled loader', async () => {
+    // The loader above throws on any URL it does not know, so success here is
+    // the assertion: nothing in issue or verify reaches for a context.
+    const { credential, publicKey } = await issueLeiCredential([OTL_CONTEXT_URL]);
+    assert.equal((await verifyProof({ document: credential, publicKey })).verified, true);
   });
 });

@@ -21,7 +21,9 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { OTL_IDENTITY_CONTEXT } from '@otl/core';
+import { OTL_IDENTITY_CONTEXT } from './context-url.ts';
+
+export { OTL_IDENTITY_CONTEXT };
 
 /** A JSON-LD document loader, matching the shape `jsonld` expects. */
 export interface LoadedDocument {

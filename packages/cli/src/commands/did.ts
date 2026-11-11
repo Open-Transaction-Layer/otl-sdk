@@ -68,8 +68,6 @@ export async function didCreate(args: ParsedArgs, store: Store, out: Output): Pr
     documentKeys.push(keyFromKeyInfo('assertion-key', assertion, ['assertionMethod', 'authentication']));
   }
 
-  const genesisBound = optionalOption(args, 'genesis-bound');
-
   const created = await createDid({
     domain,
     provider: combined(provider, preRotation),
@@ -77,9 +75,6 @@ export async function didCreate(args: ParsedArgs, store: Store, out: Output): Pr
     preRotationKeyLabel: next.handle.label,
     versionTime,
     keys: documentKeys,
-    ...(genesisBound !== undefined && genesisBound !== ''
-      ? { genesisBoundKeys: genesisBound.split(',').map((s) => s.trim()) }
-      : {}),
   });
 
   // Move the scratch directories under the now-known SCID.

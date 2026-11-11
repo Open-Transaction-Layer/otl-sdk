@@ -252,33 +252,6 @@ describe('log evolution - entry-1-only parameters', () => {
     });
     assert.equal(entry2.parameters.scid, undefined);
   });
-
-  it('omits genesisBoundKeys from later entries', async () => {
-    // The designation is read from version 1 only, so no later entry may
-    // declare, extend or remove it.
-    const provider = new InMemoryKeyProvider();
-    for (let i = 0; i < 3; i++) await provider.generateKey(`k${i}`, 'Ed25519');
-    const bound = await provider.generateKey('bound', 'Ed25519');
-
-    const created = await createDid({
-      domain: DOMAIN,
-      provider,
-      managementKeyLabel: 'k0',
-      preRotationKeyLabel: 'k1',
-      versionTime: T1,
-      keys: [keyFromKeyInfo('address-verification-key', bound, ['assertionMethod'])],
-      genesisBoundKeys: ['address-verification-key'],
-    });
-    const entry2 = await deactivate({
-      did: created.did,
-      previousEntry: created.entry,
-      provider,
-      signingKeyLabel: 'k1',
-      nextKeyLabel: 'k2',
-      versionTime: T2,
-    });
-    assert.equal(entry2.parameters.genesisBoundKeys, undefined);
-  });
 });
 
 describe('log evolution - addKey', () => {
@@ -569,42 +542,6 @@ describe('log evolution - curve enforcement', () => {
         return true;
       },
     );
-  });
-});
-
-describe('log evolution - genesis-bound designation across versions', () => {
-  it('does not carry the designation into later documents', async () => {
-    // Deliberate: a verifier reads it from version 1, and repeating
-    // it later adds no security while offering somewhere misleading to read it
-    // from. Verified against both reference implementations: resolving version
-    // 1 returns the designation; resolving the latest version does not.
-    const provider = new InMemoryKeyProvider();
-    for (let i = 0; i < 3; i++) await provider.generateKey(`k${i}`, 'Ed25519');
-    const bound = await provider.generateKey('bound', 'Ed25519');
-
-    const created = await createDid({
-      domain: DOMAIN,
-      provider,
-      managementKeyLabel: 'k0',
-      preRotationKeyLabel: 'k1',
-      versionTime: T1,
-      keys: [keyFromKeyInfo('address-verification-key', bound, ['assertionMethod'])],
-      genesisBoundKeys: ['address-verification-key'],
-    });
-    const entry2 = await addService({
-      did: created.did,
-      previousEntry: created.entry,
-      provider,
-      signingKeyLabel: 'k1',
-      nextKeyLabel: 'k2',
-      versionTime: T2,
-      service: { id: '#whois', type: 'OtlWhois', serviceEndpoint: `https://${DOMAIN}/w.json` },
-    });
-
-    const v1 = created.entry.state as Record<string, unknown>;
-    const v2 = entry2.state as Record<string, unknown>;
-    assert.ok(Array.isArray(v1['genesisBoundKeys']), 'v1 carries the designation');
-    assert.equal(v2['genesisBoundKeys'], undefined, 'later versions deliberately do not');
   });
 });
 

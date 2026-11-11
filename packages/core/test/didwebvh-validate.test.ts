@@ -4,7 +4,6 @@ import { toPublicKeyMultibase } from '@otl/keys';
 import { InMemoryKeyProvider } from '@otl/keys-dev';
 import { createDid } from '../src/didwebvh/create.ts';
 import { DIDWEBVH_1_0_PROFILE, OTL_EXTENDED_PROFILE } from '../src/didwebvh/profile.ts';
-import { keyFromKeyInfo } from '../src/didwebvh/document.ts';
 import { addService, deactivate } from '../src/didwebvh/update.ts';
 import { deriveEntryHash, parseVersionId } from '../src/didwebvh/hashing.ts';
 import { createProof } from '../src/proof.ts';
@@ -364,7 +363,6 @@ describe('validation - proofs', () => {
 describe('validation - entry-1-only parameters', () => {
   for (const [name, key, value] of [
     ['scid', 'scid', 'z'.repeat(46)],
-    ['genesisBoundKeys', 'genesisBoundKeys', ['#x']],
     ['portable', 'portable', true],
   ] as const) {
     it(`rejects ${name} in a later entry`, async () => {
@@ -376,131 +374,6 @@ describe('validation - entry-1-only parameters', () => {
       assert.match(messages(result), new RegExp(name));
     });
   }
-});
-
-describe('validation - genesis-bound keys (optional OTL extension)', () => {
-  async function withGenesisBoundKey() {
-    const provider = new InMemoryKeyProvider();
-    for (let i = 0; i < 4; i++) await provider.generateKey(`k${i}`, 'Ed25519');
-    const bound = await provider.generateKey('bound', 'Ed25519');
-    const substitute = await provider.generateKey('substitute', 'Ed25519');
-
-    const created = await createDid({
-      domain: DOMAIN,
-      provider,
-      managementKeyLabel: 'k0',
-      preRotationKeyLabel: 'k1',
-      versionTime: T1,
-      keys: [keyFromKeyInfo('address-verification-key', bound, ['assertionMethod'])],
-      genesisBoundKeys: ['address-verification-key'],
-    });
-    const entry2 = await addService({
-      did: created.did,
-      previousEntry: created.entry,
-      provider,
-      signingKeyLabel: 'k1',
-      nextKeyLabel: 'k2',
-      versionTime: T2,
-      service: { id: '#whois', type: 'OtlWhois', serviceEndpoint: `https://${DOMAIN}/w.json` },
-    });
-    return { created, entry2, substitute, entries: [created.entry, entry2] as DidLogEntry[] };
-  }
-
-  it('accepts an unchanged genesis-bound key', async () => {
-    const { entries } = await withGenesisBoundKey();
-    const result = await validateDidLog(entries);
-    assert.equal(result.valid, true, messages(result));
-  });
-
-  it('REJECTS a genesis-bound key that has disappeared', async () => {
-    // The subtle case. Treating disappearance as "this DID never had one"
-    // would let a compromised management key strip the protection by deletion
-    // alone, without forging anything.
-    const { entries } = await withGenesisBoundKey();
-    const tampered = clone(entries);
-    tampered[1]!.state = {
-      ...tampered[1]!.state,
-      verificationMethod: [],
-      assertionMethod: [],
-    };
-
-    const result = await validateDidLog(tampered);
-    assert.equal(result.valid, false);
-    assert.match(messages(result), /rejection, not a fallback/);
-  });
-
-  it('rejects substituted key material', async () => {
-    const { entries, substitute } = await withGenesisBoundKey();
-    const tampered = clone(entries);
-    const methods = [...(tampered[1]!.state.verificationMethod ?? [])];
-    methods[0] = { ...methods[0]!, publicKeyMultibase: toPublicKeyMultibase(substitute.publicKey) };
-    tampered[1]!.state = { ...tampered[1]!.state, verificationMethod: methods };
-
-    const result = await validateDidLog(tampered);
-    assert.equal(result.valid, false);
-    assert.match(messages(result), /unauthorized substitution/);
-  });
-
-  it('reads the designation from the genesis entry, not the current document', async () => {
-    // A current document claiming a key is genesis-bound proves nothing; a
-    // validator that trusted it could be told to ignore a real designation.
-    const { entries } = await withGenesisBoundKey();
-    const tampered = clone(entries);
-    delete (tampered[0]!.state as Record<string, unknown>)['genesisBoundKeys'];
-    tampered[1]!.state = { ...tampered[1]!.state, verificationMethod: [], assertionMethod: [] };
-
-    // With the designation deleted from genesis, removal would look legitimate -- but the
-    // SCID commits to the genesis document, so the edit is caught anyway.
-    const result = await validateDidLog(tampered);
-    assert.equal(result.valid, false);
-    assert.match(messages(result), /SCID mismatch/);
-  });
-
-  it('rejects a later document declaring a different set', async () => {
-    // Documents are republished wholesale, so carrying the property forward is
-    // fine -- but changing it is what an attacker would do to mislead a
-    // verifier that read the wrong version.
-    const { entries } = await withGenesisBoundKey();
-    const tampered = clone(entries);
-    (tampered[1]!.state as Record<string, unknown>)['genesisBoundKeys'] = [];
-
-    const result = await validateDidLog(tampered);
-    assert.equal(result.valid, false);
-    assert.match(messages(result), /Only version 1 governs/);
-  });
-
-  it('honours the parameters placement', async () => {
-    const provider = new InMemoryKeyProvider();
-    for (let i = 0; i < 4; i++) await provider.generateKey(`k${i}`, 'Ed25519');
-    const bound = await provider.generateKey('bound', 'Ed25519');
-
-    const created = await createDid({
-      domain: DOMAIN,
-      provider,
-      managementKeyLabel: 'k0',
-      preRotationKeyLabel: 'k1',
-      versionTime: T1,
-      keys: [keyFromKeyInfo('address-verification-key', bound, ['assertionMethod'])],
-      genesisBoundKeys: ['address-verification-key'],
-      genesisBoundPlacement: 'parameters',
-    });
-    const entry2 = await addService({
-      did: created.did,
-      previousEntry: created.entry,
-      provider,
-      signingKeyLabel: 'k1',
-      nextKeyLabel: 'k2',
-      versionTime: T2,
-      service: { id: '#whois', type: 'OtlWhois', serviceEndpoint: `https://${DOMAIN}/w.json` },
-    });
-
-    assert.equal((await validateDidLog([created.entry, entry2])).valid, true);
-
-    // ...and the disappearance rule applies identically under both placements.
-    const tampered = clone([created.entry, entry2]);
-    tampered[1]!.state = { ...tampered[1]!.state, verificationMethod: [], assertionMethod: [] };
-    assert.match(messages(await validateDidLog(tampered)), /rejection, not a fallback/);
-  });
 });
 
 describe('validation - deactivation', () => {

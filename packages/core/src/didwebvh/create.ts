@@ -23,16 +23,7 @@ import { createProof } from '../proof.ts';
 import { buildDidDocument, type DocumentKey } from './document.ts';
 import { deriveEntryHash, deriveKeyHash, deriveScid, formatVersionId, fromPlaceholders } from './hashing.ts';
 import { DIDWEBVH_1_0_PROFILE, explainCurveRejection, type MethodProfile } from './profile.ts';
-import {
-  GENESIS_BOUND_KEYS_PROPERTY,
-  OTL_IDENTITY_CONTEXT,
-  SCID_PLACEHOLDER,
-  type GenesisBoundPlacement,
-  type DidLogEntry,
-  type DidDocument,
-  type DidLogParameters,
-  type ServiceEntry,
-} from './types.ts';
+import { SCID_PLACEHOLDER, type DidLogEntry, type DidLogParameters, type ServiceEntry } from './types.ts';
 
 export interface CreateDidOptions {
   /** Domain the DID resolves from, e.g. `vasp.example.com`. Optional `:path` segments allowed. */
@@ -49,19 +40,6 @@ export interface CreateDidOptions {
   /** Verification methods to publish in the genesis document. */
   readonly keys?: readonly DocumentKey[];
   readonly service?: readonly ServiceEntry[];
-  /**
-   * Fragments to designate genesis-bound, an optional OTL extension described
-   * at {@link GENESIS_BOUND_KEYS_PROPERTY}. Declared in entry 1 only.
-   */
-  readonly genesisBoundKeys?: readonly string[];
-  /**
-   * Where the designation is written. Defaults to `'document'`.
-   *
-   * `'parameters'` writes it into the log entry's `parameters` instead, which
-   * did:webvh forbids because its parameter set is closed by a MUST. It is
-   * offered so that form can be generated for comparison, not for publication.
-   */
-  readonly genesisBoundPlacement?: GenesisBoundPlacement;
   /** UTC ISO 8601. Supplied by the caller so creation is reproducible in tests. */
   readonly versionTime: string;
   readonly portable?: boolean;
@@ -135,8 +113,6 @@ export async function createDid(options: CreateDidOptions): Promise<CreatedDid> 
     preRotationKeyLabel,
     keys = [],
     service,
-    genesisBoundKeys,
-    genesisBoundPlacement = 'document',
     versionTime,
     portable,
     profile = DIDWEBVH_1_0_PROFILE,
@@ -146,8 +122,6 @@ export async function createDid(options: CreateDidOptions): Promise<CreatedDid> 
   const preRotationKey = await provider.getKey(preRotationKeyLabel);
   assertCurvePermitted(profile, managementKey.curve, managementKeyLabel, 'DID Management Key');
   assertCurvePermitted(profile, preRotationKey.curve, preRotationKeyLabel, 'pre-rotation key');
-
-  if (genesisBoundKeys) assertGenesisBoundKeysExist(genesisBoundKeys, keys);
 
   const placeholderDid = `did:webvh:${SCID_PLACEHOLDER}:${encodeDomain(domain)}`;
 
@@ -159,22 +133,13 @@ export async function createDid(options: CreateDidOptions): Promise<CreatedDid> 
     // entry onward, so a non-empty commitment is always present.
     nextKeyHashes: [deriveKeyHash(toPublicKeyMultibase(preRotationKey.publicKey))],
     ...(portable !== undefined ? { portable } : {}),
-    // Only written here when the `parameters` placement is explicitly
-    // requested, because did:webvh forbids undefined properties in `parameters`.
-    ...(genesisBoundPlacement === 'parameters' && genesisBoundKeys && genesisBoundKeys.length > 0
-      ? { genesisBoundKeys: [...genesisBoundKeys].sort() }
-      : {}),
   };
 
   const preliminary: DidLogEntry = {
     versionId: SCID_PLACEHOLDER,
     versionTime,
     parameters,
-    state: withGenesisBoundKeys(
-      buildDidDocument({ did: placeholderDid, keys, ...(service ? { service } : {}) }),
-      placeholderDid,
-      genesisBoundPlacement === 'document' ? genesisBoundKeys : undefined,
-    ),
+    state: buildDidDocument({ did: placeholderDid, keys, ...(service ? { service } : {}) }),
   };
 
   const scid = deriveScid(preliminary);
@@ -201,45 +166,4 @@ export async function createDid(options: CreateDidOptions): Promise<CreatedDid> 
   })) as unknown as DidLogEntry;
 
   return { did, scid, entry: signed };
-}
-
-/**
- * Attach the genesis-bound designation to the genesis document.
- *
- * Fragments are expanded to absolute DID URLs, matching how every other
- * verification-method reference in a DID document is written
- * (`authentication`, `assertionMethod`), so the document stays internally
- * consistent. The OTL context is appended because DID 1.1 §6.2.3 has conforming
- * JSON-LD consumers drop terms the `@context` does not define.
- */
-function withGenesisBoundKeys(
-  document: DidDocument,
-  did: string,
-  fragments: readonly string[] | undefined,
-): DidDocument {
-  if (!fragments || fragments.length === 0) return document;
-
-  const contexts = document['@context'];
-  return {
-    ...document,
-    '@context': [...contexts, OTL_IDENTITY_CONTEXT],
-    [GENESIS_BOUND_KEYS_PROPERTY]: [...fragments]
-      .map((f) => `${did}#${f.startsWith('#') ? f.slice(1) : f}`)
-      .sort(),
-  };
-}
-
-function assertGenesisBoundKeysExist(
-  genesisBoundKeys: readonly string[],
-  keys: readonly DocumentKey[],
-): void {
-  const fragments = new Set(keys.map((k) => k.fragment));
-  for (const raw of genesisBoundKeys) {
-    const fragment = raw.startsWith('#') ? raw.slice(1) : raw;
-    if (!fragments.has(fragment)) {
-      throw new InvalidDocumentError(
-        `genesisBoundKeys names "#${fragment}", which is not a verification method in the genesis document`,
-      );
-    }
-  }
 }

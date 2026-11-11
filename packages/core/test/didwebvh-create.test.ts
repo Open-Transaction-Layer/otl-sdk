@@ -14,7 +14,7 @@ import { DIDWEBVH_METHOD, SCID_PLACEHOLDER } from '../src/didwebvh/types.ts';
 const DOMAIN = 'vasp.example.com';
 const TIME = '2026-01-01T00:00:00Z';
 
-async function setup(extra?: { keys?: readonly DocumentKey[]; genesisBoundKeys?: readonly string[] }) {
+async function setup(extra?: { keys?: readonly DocumentKey[] }) {
   const provider = new InMemoryKeyProvider();
   await provider.generateKey('did-management', 'Ed25519');
   await provider.generateKey('pre-rotation', 'Ed25519');
@@ -25,7 +25,6 @@ async function setup(extra?: { keys?: readonly DocumentKey[]; genesisBoundKeys?:
     preRotationKeyLabel: 'pre-rotation',
     versionTime: TIME,
     ...(extra?.keys ? { keys: extra.keys } : {}),
-    ...(extra?.genesisBoundKeys ? { genesisBoundKeys: extra.genesisBoundKeys } : {}),
   });
   return { provider, created };
 }
@@ -326,96 +325,6 @@ describe('did:webvh - genesis document', () => {
     const multibase = toPublicKeyMultibase(management.publicKey);
     const methods = created.entry.state.verificationMethod ?? [];
     assert.ok(!methods.some((m) => m.publicKeyMultibase === multibase));
-  });
-});
-
-describe('did:webvh - genesis-bound keys (optional OTL extension)', () => {
-  it('records them in the genesis document, not the parameters', async () => {
-    const provider = new InMemoryKeyProvider();
-    await provider.generateKey('m', 'Ed25519');
-    await provider.generateKey('p', 'Ed25519');
-    const address = await provider.generateKey('addr', 'Ed25519');
-
-    const created = await createDid({
-      domain: DOMAIN,
-      provider,
-      managementKeyLabel: 'm',
-      preRotationKeyLabel: 'p',
-      versionTime: TIME,
-      keys: [keyFromKeyInfo('address-verification-key', address, ['assertionMethod'])],
-      genesisBoundKeys: ['address-verification-key'],
-    });
-
-    // did:webvh forbids undefined properties in `parameters`; DID Core supports
-    // document extension by design. See GENESIS_BOUND_KEYS_PROPERTY.
-    assert.equal(created.entry.parameters.genesisBoundKeys, undefined);
-    assert.deepEqual((created.entry.state as Record<string, unknown>)['genesisBoundKeys'], [
-      `${created.did}#address-verification-key`,
-    ]);
-    assert.ok(
-      (created.entry.state['@context'] as string[]).includes('https://otl.network/contexts/identity/v1'),
-      'the term must be defined by a context or conforming JSON-LD consumers drop it',
-    );
-  });
-
-  it('emits the parameters placement when requested', async () => {
-    const provider = new InMemoryKeyProvider();
-    await provider.generateKey('m', 'Ed25519');
-    await provider.generateKey('p', 'Ed25519');
-    const address = await provider.generateKey('addr', 'Ed25519');
-
-    const created = await createDid({
-      domain: DOMAIN,
-      provider,
-      managementKeyLabel: 'm',
-      preRotationKeyLabel: 'p',
-      versionTime: TIME,
-      keys: [keyFromKeyInfo('address-verification-key', address, ['assertionMethod'])],
-      genesisBoundKeys: ['address-verification-key'],
-      genesisBoundPlacement: 'parameters',
-    });
-
-    assert.deepEqual(created.entry.parameters.genesisBoundKeys, ['address-verification-key']);
-    assert.equal((created.entry.state as Record<string, unknown>)['genesisBoundKeys'], undefined);
-  });
-
-  it('refuses to designate a key that is not in the document', async () => {
-    const provider = new InMemoryKeyProvider();
-    await provider.generateKey('m', 'Ed25519');
-    await provider.generateKey('p', 'Ed25519');
-
-    await assert.rejects(
-      () =>
-        createDid({
-          domain: DOMAIN,
-          provider,
-          managementKeyLabel: 'm',
-          preRotationKeyLabel: 'p',
-          versionTime: TIME,
-          genesisBoundKeys: ['no-such-key'],
-        }),
-      InvalidDocumentError,
-    );
-  });
-
-  it('accepts fragments written with or without a leading hash', async () => {
-    const provider = new InMemoryKeyProvider();
-    await provider.generateKey('m', 'Ed25519');
-    await provider.generateKey('p', 'Ed25519');
-    const address = await provider.generateKey('addr', 'Ed25519');
-
-    const created = await createDid({
-      domain: DOMAIN,
-      provider,
-      managementKeyLabel: 'm',
-      preRotationKeyLabel: 'p',
-      versionTime: TIME,
-      keys: [keyFromKeyInfo('address-verification-key', address, ['assertionMethod'])],
-      genesisBoundKeys: ['#address-verification-key'],
-    });
-    assert.deepEqual((created.entry.state as Record<string, unknown>)['genesisBoundKeys'], [
-      `${created.did}#address-verification-key`,
-    ]);
   });
 });
 

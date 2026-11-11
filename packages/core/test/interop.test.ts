@@ -104,7 +104,7 @@ async function askOracle(
   }
 }
 
-/** A DID with a second version, a genesis-bound key, and an added key. */
+/** A DID with a second version and an added key. */
 async function buildLog() {
   const provider = new InMemoryKeyProvider();
   for (let i = 0; i < 4; i++) await provider.generateKey(`k${i}`, 'Ed25519');
@@ -118,7 +118,6 @@ async function buildLog() {
     preRotationKeyLabel: 'k1',
     versionTime: T1,
     keys: [keyFromKeyInfo('address-verification-key', address, ['assertionMethod'])],
-    genesisBoundKeys: ['address-verification-key'],
   });
 
   const v2 = await addService({
@@ -192,22 +191,6 @@ describe('interop - an independent implementation accepts what we produce', () =
     for (const entry of entries) {
       assert.ok(Array.isArray((entry as unknown as { proof: unknown }).proof));
     }
-  });
-
-  it('carries genesisBoundKeys through to a third-party resolver', async () => {
-    // Only at version 1, which is the version a verifier reads the
-    // designation from. Later versions deliberately omit it.
-    const { entries } = await buildLog();
-
-    const atGenesis = await askOracle(entries, { versionNumber: 1 });
-    assert.equal(atGenesis.accepted, true, atGenesis.reason ?? 'no reason reported');
-    assert.ok(
-      Array.isArray(atGenesis.document?.['genesisBoundKeys']),
-      'the designation must survive third-party resolution of version 1',
-    );
-
-    const atLatest = await askOracle(entries);
-    assert.equal(atLatest.document?.['genesisBoundKeys'], undefined);
   });
 });
 

@@ -32,13 +32,7 @@ import { hashToBase58 } from '../multihash.ts';
 import { isProofObject, proofsOf, verifyProof, type DataIntegrityProof } from '../proof.ts';
 import { deriveKeyHash, parseVersionId, toPlaceholders } from './hashing.ts';
 import { DIDWEBVH_1_0_PROFILE, profileForMethod, type MethodProfile } from './profile.ts';
-import {
-  GENESIS_BOUND_KEYS_PROPERTY,
-  SCID_PLACEHOLDER,
-  type DidDocument,
-  type DidLogEntry,
-  type VerificationMethod,
-} from './types.ts';
+import { SCID_PLACEHOLDER, type DidDocument, type DidLogEntry } from './types.ts';
 
 export interface ValidationIssue {
   /** 1-based log entry the issue was found in; absent for whole-log issues. */
@@ -318,9 +312,6 @@ export async function validateDidLog(
     // Entry-1-only parameters.
     if (number > 1) {
       if (entry.parameters.scid !== undefined) add('scid MUST appear in the genesis entry only', number);
-      if (entry.parameters.genesisBoundKeys !== undefined) {
-        add('genesisBoundKeys MUST appear in the genesis entry only', number);
-      }
       // Portability may be switched OFF later, but never back ON.
       if (entry.parameters.portable === true) {
         add('portable MUST NOT be enabled after the genesis entry', number);
@@ -420,12 +411,10 @@ export async function validateDidLog(
     previous = entry;
   }
 
-  // ---- Genesis-bound keys (optional OTL extension) ----------------------
+  // The final entry, or the genesis entry when the final one is malformed. A
+  // malformed final entry has already been reported above.
   const last = entries.at(-1);
   const latest = last !== undefined && isWellShapedEntry(last) && isRecord(last.state) ? last : genesis;
-  // A malformed final entry has already been reported above, so the check is
-  // only meaningful, and only run, against a final entry that has a document.
-  if (latest === last) issues.push(...checkGenesisBoundKeys(genesis, latest));
 
   // ---- Continuity with what we have already validated -------------------
   if (options.known !== undefined) {
@@ -604,117 +593,6 @@ function multikeyFromVerificationMethod(proof: DataIntegrityProof): string | und
   if (typeof verificationMethod !== 'string') return undefined;
   const match = /^did:key:(z[1-9A-HJ-NP-Za-km-z]+)(?:#.*)?$/.exec(verificationMethod);
   return match?.[1];
-}
-
-/**
- * Read the genesis-bound designation from the genesis entry.
- *
- * Genesis-bound keys are an optional OTL extension (see
- * {@link GENESIS_BOUND_KEYS_PROPERTY}). The genesis *document* is checked
- * first, because that is the conformant placement, and the `parameters` form
- * second. Both are read from version 1 and nowhere else, because the current
- * document cannot be trusted to self-report which of its keys are
- * genesis-bound.
- *
- * Checking the designation has three outcomes: unchanged, removed and
- * substituted. A genesis-bound key missing from the current document is a
- * rejection, NOT a fallback to "this DID never had one", because treating
- * disappearance as absence would let a compromised DID Management Key strip
- * the protection by deletion alone, without forging anything.
- */
-function declaredGenesisBoundKeys(genesis: DidLogEntry): string[] {
-  const fromDocument = (genesis.state as Record<string, unknown>)[GENESIS_BOUND_KEYS_PROPERTY];
-  if (Array.isArray(fromDocument)) return fromDocument.filter((v): v is string => typeof v === 'string');
-  const fromParameters: unknown = genesis.parameters.genesisBoundKeys;
-  return Array.isArray(fromParameters)
-    ? fromParameters.filter((v): v is string => typeof v === 'string')
-    : [];
-}
-
-/** Fragment of a bare `#name` or an absolute `did:…#name` reference. */
-const fragmentOf = (reference: string): string => reference.slice(reference.lastIndexOf('#') + 1);
-
-function checkGenesisBoundKeys(genesis: DidLogEntry, current: DidLogEntry): ValidationIssue[] {
-  const declared = declaredGenesisBoundKeys(genesis);
-  if (declared.length === 0) return [];
-
-  const issues: ValidationIssue[] = [];
-  const genesisMethods = verificationMethodsOf(genesis.state);
-  const currentMethods = verificationMethodsOf(current.state);
-
-  for (const raw of declared) {
-    const fragment = fragmentOf(raw);
-    const inGenesis = genesisMethods.find((m) => m.id.endsWith(`#${fragment}`));
-    const inCurrent = currentMethods.find((m) => m.id.endsWith(`#${fragment}`));
-
-    if (!inGenesis) {
-      issues.push({
-        entry: 1,
-        message: `genesisBoundKeys names "#${fragment}", which is not in the genesis document`,
-      });
-      continue;
-    }
-
-    if (!inCurrent) {
-      issues.push({
-        message:
-          `Genesis-bound key "#${fragment}" has been removed from the current document. ` +
-          `This is a rejection, not a fallback: a key designated genesis-bound ` +
-          `cannot hand off to another signer by disappearing.`,
-      });
-      continue;
-    }
-
-    if (keyMaterialOf(inGenesis) !== keyMaterialOf(inCurrent)) {
-      issues.push({
-        message:
-          `Genesis-bound key "#${fragment}" carries different key material than the genesis document, ` +
-          `which is an unauthorized substitution.`,
-      });
-    }
-  }
-
-  // A later document may carry the property forward — documents are republished
-  // wholesale — but declaring a DIFFERENT set is exactly what an attacker would
-  // do to mislead a verifier that read the wrong version.
-  if (current !== genesis) {
-    const currentDeclared = (current.state as Record<string, unknown>)[GENESIS_BOUND_KEYS_PROPERTY];
-    if (Array.isArray(currentDeclared)) {
-      const from = (list: readonly unknown[]) =>
-        list
-          .filter((v): v is string => typeof v === 'string')
-          .map(fragmentOf)
-          .sort()
-          .join(',');
-      if (from(currentDeclared) !== from(declared)) {
-        issues.push({
-          message:
-            `The current document declares a different genesisBoundKeys set than the genesis entry. ` +
-            `Only version 1 governs; a later declaration cannot add or remove designations.`,
-        });
-      }
-    }
-  }
-
-  return issues;
-}
-
-/** The document's verification methods that carry a string `id`; anything else is ignored. */
-function verificationMethodsOf(document: DidDocument): VerificationMethod[] {
-  const methods: unknown = document.verificationMethod;
-  return Array.isArray(methods)
-    ? methods.filter((m): m is VerificationMethod => isRecord(m) && typeof m['id'] === 'string')
-    : [];
-}
-
-function keyMaterialOf(method: {
-  publicKeyMultibase?: string;
-  publicKeyJwk?: Record<string, string>;
-}): string {
-  const multibase = method.publicKeyMultibase;
-  if (multibase !== undefined && multibase !== '') return `multibase:${multibase}`;
-  if (method.publicKeyJwk) return `jwk:${canonicalizeToBytes(method.publicKeyJwk).toString()}`;
-  return 'none';
 }
 
 const truncate = (value: string): string =>

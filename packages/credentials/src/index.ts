@@ -6,6 +6,7 @@
  * verifying machinery.
  */
 
+export * from './context-url.ts';
 export * from './errors.ts';
 export * from './registry.ts';
 export * from './credential.ts';
