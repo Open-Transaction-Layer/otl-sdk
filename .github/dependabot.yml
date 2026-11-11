@@ -40,3 +40,15 @@ updates:
     groups:
       actions-minor-and-patch:
         update-types: [minor, patch]
+
+  # The workflow analysis job installs zizmor from a requirements file that
+  # pins the version and the hash of every release file, and Dependabot keeps
+  # both in step when it bumps the version.
+  - package-ecosystem: pip
+    directory: /.github/zizmor
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci

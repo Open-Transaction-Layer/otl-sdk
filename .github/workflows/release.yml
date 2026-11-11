@@ -54,18 +54,69 @@ jobs:
       # Install scripts of dependencies never run next to the publish token.
       - run: npm ci --ignore-scripts
 
-      # Opens a release pull request when changesets are pending, and publishes
-      # once that pull request merges. Provenance comes from the id-token
-      # permission above plus publishConfig.provenance in each manifest, so a
-      # consumer can verify a tarball was built from this repository rather
-      # than from someone's laptop.
-      - uses: changesets/action@ae32849d5ba541f9ae29e40e22a623bc13562f51 # v2.1.2
-        with:
-          publish: npm run release
-          version: npm run version
-          commit: 'chore(release): version packages'
-          title: 'chore(release): version packages'
+      # Pending changesets are the signal that a release pull request is due.
+      # README.md in the changeset directory is documentation, not a changeset.
+      - name: Detect pending changesets
+        id: changesets
+        run: |
+          set -euo pipefail
+          pending=false
+          for file in .changeset/*.md; do
+            if [ -e "$file" ] && [ "$(basename "$file")" != "README.md" ]; then
+              pending=true
+              break
+            fi
+          done
+          echo "pending=$pending" >> "$GITHUB_OUTPUT"
+
+      # While changesets are pending, the versions and changelogs are bumped on
+      # a release branch and proposed through a pull request. This step holds no
+      # npm token, because versioning needs none. The git token authenticates
+      # the single push inline and is never written to .git/config. A pull
+      # request opened with the workflow token does not trigger other
+      # workflows, so a maintainer must push an empty commit to the branch or
+      # close and reopen the pull request for its required checks to run.
+      - name: Open or update the release pull request
+        if: steps.changesets.outputs.pending == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_CONFIG_PROVENANCE: 'true'
+          RELEASE_BRANCH: changeset-release/main
+          RELEASE_TITLE: 'chore(release): version packages'
+        run: |
+          set -euo pipefail
+          npm run version
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$RELEASE_BRANCH"
+          git add --all
+          git commit --message "$RELEASE_TITLE"
+          auth="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          git -c "http.extraheader=Authorization: Basic $auth" \
+            push --force origin "refs/heads/$RELEASE_BRANCH:refs/heads/$RELEASE_BRANCH"
+          body='This pull request was opened by the release workflow. Merging it publishes the versions below to npm.'
+          existing="$(gh pr list --head "$RELEASE_BRANCH" --base main --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh pr edit "$existing" --title "$RELEASE_TITLE" --body "$body"
+          else
+            gh pr create --base main --head "$RELEASE_BRANCH" --title "$RELEASE_TITLE" --body "$body"
+          fi
+
+      # With no changesets pending, every package version not yet on npm is
+      # published and the tags that publishing creates are pushed. Provenance
+      # comes from the id-token permission above plus publishConfig.provenance
+      # in each manifest, so a consumer can verify a tarball was built from this
+      # repository rather than from someone's laptop. Only this step holds the
+      # npm token.
+      - name: Publish to npm
+        if: steps.changesets.outputs.pending != 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          npm run release
+          auth="$(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)"
+          git -c "http.extraheader=Authorization: Basic $auth" push origin --tags

@@ -63,7 +63,7 @@ api PUT "$API/actions/permissions" '{"enabled": true, "allowed_actions": "select
 api PUT "$API/actions/permissions/selected-actions" '{
   "github_owned_allowed": true,
   "verified_allowed": false,
-  "patterns_allowed": ["changesets/action@*", "zizmorcore/zizmor-action@*", "ossf/scorecard-action@*"]
+  "patterns_allowed": []
 }'
 api PUT "$API/actions/permissions/workflow" '{"default_workflow_permissions": "read", "can_approve_pull_request_reviews": false}'
 api PUT "$API/actions/permissions/fork-pr-contributor-approval" '{"approval_policy": "all_external_contributors"}'
