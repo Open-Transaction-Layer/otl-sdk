@@ -21,6 +21,7 @@ import { InMemoryKeyProvider } from '@otl/keys-dev';
 import { createDid, keyFromKeyInfo, addService } from '@otl/core';
 import {
   assertFetchableUrl,
+  isPrivateAddress,
   didDocumentUrl,
   didLogUrl,
   FetchError,
@@ -128,7 +129,7 @@ describe('guarded fetching', () => {
     );
   });
 
-  it('refuses private and link-local hosts when asked', () => {
+  it('refuses private and link-local hosts by default', () => {
     const blocked = [
       'https://localhost/x',
       'https://127.0.0.1/x',
@@ -140,9 +141,110 @@ describe('guarded fetching', () => {
     ];
     for (const url of blocked) {
       assert.throws(() => assertFetchableUrl(url, { blockPrivateAddresses: true }), FetchError, url);
-      // Off by default, so local development keeps working.
-      assert.doesNotThrow(() => assertFetchableUrl(url));
+      // On by default, and local development opts out explicitly.
+      assert.throws(() => assertFetchableUrl(url), FetchError, url);
+      assert.doesNotThrow(() => assertFetchableUrl(url, { blockPrivateAddresses: false }));
     }
+  });
+
+  it('refuses alternate spellings of private addresses', () => {
+    const blocked = [
+      'https://[::ffff:127.0.0.1]/x', // IPv4-mapped loopback
+      'https://[::ffff:a9fe:a9fe]/x', // IPv4-mapped metadata address
+      'https://0177.0.0.1/x', // octal
+      'https://2130706433/x', // decimal
+      'https://0x7f.1/x', // hex
+      'https://[64:ff9b::7f00:1]/x', // NAT64 to loopback
+      'https://[2002:7f00:1::]/x', // 6to4 to loopback
+      'https://100.64.0.1/x', // carrier-grade NAT
+      'https://[64:ff9b:1::1]/x', // local-use NAT64
+      'https://[2001::1]/x', // Teredo
+      'https://[::ffff:0:7f00:1]/x', // IPv4-translated
+      'https://[5f00::1]/x', // outside global unicast
+      'https://app.localhost/x',
+    ];
+    for (const url of blocked) {
+      assert.throws(() => assertFetchableUrl(url, { blockPrivateAddresses: true }), FetchError, url);
+    }
+  });
+
+  it('classifies addresses by range, not by spelling', () => {
+    for (const address of [
+      '8.8.8.8',
+      '1.1.1.1',
+      '2606:4700:4700::1111',
+      '::ffff:8.8.8.8',
+      '[2001:4860:4860::8888]',
+    ]) {
+      assert.equal(isPrivateAddress(address), false, address);
+    }
+    for (const address of [
+      '127.0.0.1',
+      '10.1.2.3',
+      '172.31.255.255',
+      '192.168.0.1',
+      '0.0.0.0',
+      'fe80::1',
+      'fd12::1',
+      '::',
+    ]) {
+      assert.equal(isPrivateAddress(address), true, address);
+    }
+    // 172.32.0.0 is just outside 172.16.0.0/12.
+    assert.equal(isPrivateAddress('172.32.0.1'), false);
+    // Not an IP literal, so there is nothing to classify.
+    assert.equal(isPrivateAddress('example.com'), false);
+  });
+
+  it('refuses a public-looking name that resolves to a private address', async () => {
+    // The classic bypass: the attacker owns the DNS record, so the hostname
+    // passes any text check but the connection would land inside the network.
+    let attempted = false;
+    for (const address of ['169.254.169.254', '10.0.0.5', '127.0.0.1', '::1', '::ffff:10.0.0.5']) {
+      await assert.rejects(
+        () =>
+          fetchText('https://evil.example.com/.well-known/did.json', {
+            blockPrivateAddresses: true,
+            lookup: () => {
+              attempted = true;
+              return Promise.resolve([{ address, family: address.includes(':') ? 6 : 4 }]);
+            },
+          }),
+        (error: unknown) => {
+          assert.ok(error instanceof FetchError, address);
+          assert.match((error as Error).message, /resolves to .* a loopback, link-local or private address/);
+          return true;
+        },
+        address,
+      );
+    }
+    assert.ok(attempted, 'the resolved address must be consulted');
+  });
+
+  it('refuses when any one of several resolved addresses is private', async () => {
+    await assert.rejects(
+      () =>
+        fetchText('https://evil.example.com/x', {
+          blockPrivateAddresses: true,
+          lookup: () =>
+            Promise.resolve([
+              { address: '93.184.216.34', family: 4 },
+              { address: '10.0.0.5', family: 4 },
+            ]),
+        }),
+      /resolves to 10\.0\.0\.5/,
+    );
+  });
+
+  it('refuses a name that resolves to nothing', async () => {
+    await assert.rejects(
+      () =>
+        fetchText('https://evil.example.com/x', {
+          blockPrivateAddresses: true,
+          lookup: () => Promise.resolve([]),
+        }),
+      /did not resolve to any address/,
+    );
   });
 
   it('refuses to follow a redirect', async () => {

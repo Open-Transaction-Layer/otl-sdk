@@ -15,11 +15,16 @@
  *    would otherwise stall validation forever.
  *  - **No cross-origin redirects.** Following one lets a counterparty's domain
  *    redirect a resolver at an internal host, which is the classic SSRF shape.
- *  - **Optional private-address refusal.** Off by default because local
- *    development needs `localhost`, but it must be on for any server-side
- *    deployment resolving arbitrary counterparty DIDs. It matches hostname
- *    literals only and does not resolve DNS.
+ *  - **Private-address refusal.** On by default, because a server resolving arbitrary counterparty DIDs is
+ *    the common case; local development opts out to reach `localhost`. It is enforced on the
+ *    address actually connected to, not the hostname text: a counterparty
+ *    controls their DNS, so a name that looks public can resolve to an
+ *    internal address. The name is resolved once, every answer is checked, and
+ *    the connection is made to that checked answer, so a second lookup cannot
+ *    return something different (DNS rebinding).
  */
+
+import { isPrivateAddress } from './address.ts';
 
 export class FetchError extends Error {
   readonly url: string;
@@ -38,18 +43,19 @@ export interface FetchOptions {
   /** Maximum bytes accepted before the response is abandoned. */
   readonly maxBytes?: number;
   /**
-   * Refuse URLs whose hostname is a loopback, link-local or private-range
-   * literal (for example `localhost`, `127.0.0.1` or `10.0.0.1`). Off by
-   * default so local development works, and it must be turned on for any
-   * server resolving arbitrary DIDs.
+   * Refuse loopback, link-local, private and other non-public addresses, both
+   * when written into the URL and when a hostname resolves to one. On by
+   * default, so a server resolving arbitrary DIDs is protected unless it opts
+   * out; set `false` for local development against `localhost`.
    *
-   * This filters hostname literals only and does not resolve DNS, so it does
-   * not stop a public DNS name that resolves to a private address. A server
-   * that needs that protection must also constrain outbound traffic at the
-   * network layer or supply a `fetch` that checks resolved addresses.
+   * The resolved-address check needs to control the connection, so it applies
+   * only to the built-in transport. A caller-supplied `fetch` is responsible
+   * for its own network policy and only gets the literal-address check.
    */
   readonly blockPrivateAddresses?: boolean;
-  /** Injected for tests. */
+  /** Resolve a hostname to every address it maps to. Injected for tests. */
+  readonly lookup?: (hostname: string) => Promise<readonly ResolvedAddress[]>;
+  /** Replaces the transport entirely. Injected for tests. */
   readonly fetch?: typeof globalThis.fetch;
 }
 
@@ -57,18 +63,13 @@ export const DEFAULT_TIMEOUT_MS = 10_000;
 /** Comfortably above a realistic log or status list, far below a denial of service. */
 export const DEFAULT_MAX_BYTES = 5 * 1024 * 1024;
 
-/** Hosts that should never be reachable from a counterparty-supplied identifier. */
-const PRIVATE_HOST_PATTERNS = [
-  /^localhost$/i,
-  /^127\./,
-  /^0\.0\.0\.0$/,
-  /^10\./,
-  /^192\.168\./,
-  /^172\.(1[6-9]|2\d|3[01])\./,
-  /^169\.254\./, // link-local, including cloud metadata at 169.254.169.254
-  /^\[?::1\]?$/,
-  /^\[?f[cd][0-9a-f]{2}:/i, // unique local addresses
-];
+export interface ResolvedAddress {
+  readonly address: string;
+  readonly family: number;
+}
+
+/** Names that mean "this machine" whatever DNS says. */
+const LOCAL_NAMES = /^localhost$|\.localhost$/i;
 
 export function assertFetchableUrl(url: string, options: FetchOptions = {}): URL {
   let parsed: URL;
@@ -82,9 +83,9 @@ export function assertFetchableUrl(url: string, options: FetchOptions = {}): URL
     throw new FetchError(`Refusing to fetch "${url}": the Identity layer requires HTTPS`, url);
   }
 
-  if (options.blockPrivateAddresses === true) {
+  if (options.blockPrivateAddresses !== false) {
     const host = parsed.hostname;
-    if (PRIVATE_HOST_PATTERNS.some((pattern) => pattern.test(host))) {
+    if (LOCAL_NAMES.test(host) || isPrivateAddress(host)) {
       throw new FetchError(
         `Refusing to fetch "${url}": "${host}" is a loopback, link-local or private address`,
         url,
@@ -95,15 +96,101 @@ export function assertFetchableUrl(url: string, options: FetchOptions = {}): URL
   return parsed;
 }
 
+/**
+ * A `fetch` that resolves the host itself, refuses if any answer is
+ * non-public, and connects to the address it checked.
+ *
+ * Node's `fetch` offers no hook between resolution and connection, so this
+ * uses `node:https`, whose `lookup` option is exactly that hook. Certificate
+ * and hostname verification are unchanged: TLS still validates against the
+ * name in the URL, only the address dialled is pinned.
+ */
+function guardedFetch(url: string, resolve?: FetchOptions['lookup']): typeof globalThis.fetch {
+  return async (input, init) => {
+    const [{ request }, { lookup: dnsLookup }, { Readable }] = await Promise.all([
+      import('node:https'),
+      import('node:dns/promises'),
+      import('node:stream'),
+    ]);
+    const target = input instanceof URL ? input : new URL(input instanceof Request ? input.url : input);
+    const resolveAll = resolve ?? ((hostname: string) => dnsLookup(hostname, { all: true }));
+
+    return new Promise<Response>((fulfil, reject) => {
+      const req = request(
+        {
+          protocol: target.protocol,
+          hostname: target.hostname.replace(/^\[|\]$/g, ''),
+          port: target.port === '' ? 443 : Number(target.port),
+          path: `${target.pathname}${target.search}`,
+          method: 'GET',
+          headers: Object.fromEntries(new Headers(init?.headers).entries()),
+          ...(init?.signal ? { signal: init.signal } : {}),
+          lookup: (hostname, options, callback) => {
+            resolveAll(hostname).then(
+              (answers) => {
+                const blocked = answers.find((answer) => isPrivateAddress(answer.address));
+                if (answers.length === 0 || blocked) {
+                  const why = blocked
+                    ? `"${hostname}" resolves to ${blocked.address}, a loopback, link-local or private address`
+                    : `"${hostname}" did not resolve to any address`;
+                  callback(new FetchError(`Refusing to fetch "${url}": ${why}`, url), '', 0);
+                  return;
+                }
+                if (options.all === true) {
+                  (callback as (error: null, all: ResolvedAddress[]) => void)(null, [...answers]);
+                } else {
+                  const [first] = answers as [ResolvedAddress];
+                  callback(null, first.address, first.family);
+                }
+              },
+              (error: unknown) => {
+                callback(error as NodeJS.ErrnoException, '', 0);
+              },
+            );
+          },
+        },
+        (res) => {
+          // This runs on a counterparty-controlled response, and an exception in
+          // an event callback is uncaught, so any failure becomes a rejection.
+          try {
+            const status = res.statusCode ?? 0;
+            if (status < 200 || status > 599) {
+              throw new FetchError(`"${url}" returned an unusable status ${status}`, url, { status });
+            }
+            const headers = new Headers();
+            for (const [name, value] of Object.entries(res.headers)) {
+              for (const item of Array.isArray(value) ? value : value === undefined ? [] : [value]) {
+                headers.append(name, item);
+              }
+            }
+            const bodyless = status === 204 || status === 205 || status === 304;
+            if (bodyless) res.resume();
+            fulfil(
+              new Response(bodyless ? null : (Readable.toWeb(res) as ReadableStream<Uint8Array>), {
+                status,
+                headers,
+              }),
+            );
+          } catch (error) {
+            res.destroy();
+            reject(error instanceof Error ? error : new Error(String(error)));
+          }
+        },
+      );
+      req.on('error', reject);
+      req.end();
+    });
+  };
+}
+
 /** Fetch text under the guards above. */
 export async function fetchText(url: string, options: FetchOptions = {}): Promise<string> {
-  const {
-    timeoutMs = DEFAULT_TIMEOUT_MS,
-    maxBytes = DEFAULT_MAX_BYTES,
-    fetch: doFetch = globalThis.fetch,
-  } = options;
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, maxBytes = DEFAULT_MAX_BYTES } = options;
 
   const target = assertFetchableUrl(url, options);
+  const doFetch =
+    options.fetch ??
+    (options.blockPrivateAddresses !== false ? guardedFetch(url, options.lookup) : globalThis.fetch);
   const controller = new AbortController();
   const timer = setTimeout(() => {
     controller.abort();

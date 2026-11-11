@@ -12,8 +12,8 @@ import type { Store } from '../store.ts';
 
 /**
  * Fetch options shared by every command that contacts another participant.
- * Server-side deployments should refuse private addresses; local development
- * needs them.
+ * Private addresses are refused unless `--allow-private-addresses` is given,
+ * which local development needs.
  */
 export const fetchOptionsFrom = (args: ParsedArgs) => {
   const timeout = optionalOption(args, 'timeout');
@@ -22,7 +22,7 @@ export const fetchOptionsFrom = (args: ParsedArgs) => {
     throw new CliError(`Invalid --timeout "${timeout}"`, { hint: 'Give a whole number of milliseconds.' });
   }
   return {
-    blockPrivateAddresses: flag(args, 'block-private-addresses'),
+    blockPrivateAddresses: !flag(args, 'allow-private-addresses'),
     ...(timeoutMs !== undefined ? { timeoutMs } : {}),
   };
 };

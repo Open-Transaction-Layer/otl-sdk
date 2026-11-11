@@ -31,11 +31,13 @@ revocation can be checked.
 
 All fetching requires HTTPS, caps response size, applies a timeout and refuses
 redirects, and TLS verification is never disabled. The `blockPrivateAddresses`
-option, which refuses loopback, link-local and private-range hostnames, is off
-by default so that local development against `localhost` works, and it must be
-enabled for any server-side use that resolves counterparty DIDs. It inspects
-hostname literals only and does not resolve DNS, so a server also needs
-network-level egress controls to stop a public name that points at a private
-address.
+option refuses loopback, link-local, private-range and other non-public
+addresses, both when one is written into the URL and when a hostname resolves
+to one. It is on by default, and the built-in transport resolves the name once,
+checks every address returned and connects to the address it checked, so a
+public-looking name that points at a private address is refused. Set it to
+`false` for local development against `localhost`. A `fetch` you supply
+replaces that transport, so it only gets the literal-address check and is
+responsible for its own network policy.
 
 Licensed under Apache-2.0.

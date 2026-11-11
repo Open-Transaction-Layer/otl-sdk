@@ -118,7 +118,7 @@ Publication
   serve --cert <p> --key <p> [--port <n>]
                                    serve it locally over HTTPS (default port 8443)
 
-Global: --json  --did <did>  --block-private-addresses  --timeout <ms>
+Global: --json  --did <did>  --allow-private-addresses  --timeout <ms>
 Environment: OTL_HOME, OTL_KEYSTORE_PASSPHRASE, OTL_PREROTATION_PASSPHRASE
 `;
 

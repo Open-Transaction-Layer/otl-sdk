@@ -22,7 +22,7 @@ export const BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
   'help',
   'yes',
   'allow-empty',
-  'block-private-addresses',
+  'allow-private-addresses',
   'no-assertion-key',
 ]);
 

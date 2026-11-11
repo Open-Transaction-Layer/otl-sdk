@@ -6,6 +6,7 @@
  * `http.ts` are load-bearing rather than defensive habit.
  */
 
+export * from './address.ts';
 export * from './url.ts';
 export * from './http.ts';
 export * from './memory.ts';
