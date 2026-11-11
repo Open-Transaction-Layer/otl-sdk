@@ -216,7 +216,10 @@ export class FileKeyProvider
   }
 
   #decryptPrivateKey(file: KeyFile): KeyObject {
-    const { kdf, cipher, salt, nonce, ciphertext, tag, iterations } = file.privateKey;
+    const { salt, nonce, ciphertext, tag, iterations } = file.privateKey;
+    // Widened to string: the type says one literal but the file is untrusted.
+    const kdf: string = file.privateKey.kdf;
+    const cipher: string = file.privateKey.cipher;
     // The key file is untrusted input: an unexpected scheme or an unbounded
     // iteration count must be rejected before any work is done with it.
     if (

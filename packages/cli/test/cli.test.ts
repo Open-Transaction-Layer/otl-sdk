@@ -564,7 +564,7 @@ describe('CLI - whois publish', () => {
       fetchStatusList: () => Promise.reject(new Error('no credentials to check')),
       fetchOptions: { fetch },
     });
-    assert.equal(result.presentationVerified, true, result.presentationIssue);
+    assert.equal(result.presentationVerified, true, result.presentationIssue ?? 'presentation not verified');
   });
 });
 

@@ -351,10 +351,10 @@ describe('Data Integrity proof - malformed and overriding input', () => {
     });
     const [proof] = proofsOf(secured);
     assert.equal(proof?.type, 'DataIntegrityProof');
-    assert.equal(proof?.cryptosuite, 'eddsa-jcs-2022');
-    assert.equal(proof?.verificationMethod, VM);
-    assert.equal(proof?.proofPurpose, 'assertionMethod');
-    assert.equal(proof?.['domain'], 'counterparty.example');
+    assert.equal(proof.cryptosuite, 'eddsa-jcs-2022');
+    assert.equal(proof.verificationMethod, VM);
+    assert.equal(proof.proofPurpose, 'assertionMethod');
+    assert.equal(proof['domain'], 'counterparty.example');
     assert.equal((await verifyProof({ document: secured, publicKey: key.publicKey })).verified, true);
   });
 });

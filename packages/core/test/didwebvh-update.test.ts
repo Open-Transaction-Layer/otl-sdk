@@ -617,11 +617,12 @@ describe('log evolution - guards on the caller', () => {
 
   it('rejects an absolute service id under a DID that merely shares a prefix', () => {
     const did = 'did:webvh:QmScid:vasp.example.com';
-    assert.doesNotThrow(() => validateServiceEntry({ ...service, id: `${did}#whois` }, did));
-    assert.throws(
-      () => validateServiceEntry({ ...service, id: `${did}.attacker.example#whois` }, did),
-      InvalidDocumentError,
-    );
+    assert.doesNotThrow(() => {
+      validateServiceEntry({ ...service, id: `${did}#whois` }, did);
+    });
+    assert.throws(() => {
+      validateServiceEntry({ ...service, id: `${did}.attacker.example#whois` }, did);
+    }, InvalidDocumentError);
   });
 
   it('refuses addKey, addService and deactivate for a different DID', async () => {
