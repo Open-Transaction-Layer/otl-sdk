@@ -315,6 +315,71 @@ describe('JSON-LD - the RDF layer, where two implementations agree or do not', (
   });
 });
 
+describe('JSON-LD - nothing the SDK emits is left without a context term', () => {
+  /** Every term name the bundled context defines, at any depth. */
+  const definedTerms = (): Set<string> => {
+    const terms = new Set<string>();
+    const walk = (context: Record<string, unknown>) => {
+      for (const [key, value] of Object.entries(context)) {
+        if (key.startsWith('@')) continue;
+        terms.add(key);
+        if (typeof value === 'object' && value !== null) {
+          const nested = (value as { '@context'?: Record<string, unknown> })['@context'];
+          if (nested) walk(nested);
+        }
+      }
+    };
+    walk((CONTEXTS[OTL_CONTEXT_URL] as { '@context': Record<string, unknown> })['@context']);
+    return terms;
+  };
+
+  /** Property names used in a subject; `id` and `type` are JSON-LD keywords here. */
+  const usedKeys = (value: unknown, found = new Set<string>()): Set<string> => {
+    if (Array.isArray(value)) value.forEach((v) => usedKeys(v, found));
+    else if (typeof value === 'object' && value !== null) {
+      for (const [key, inner] of Object.entries(value)) {
+        if (key !== 'id' && key !== 'type') found.add(key);
+        usedKeys(inner, found);
+      }
+    }
+    return found;
+  };
+
+  const assertAllDefined = (subject: unknown) => {
+    const used = usedKeys(subject);
+    assert.ok(used.size > 0, 'the subject should carry at least one property');
+    const terms = definedTerms();
+    const undefinedKeys = [...used].filter((k) => !terms.has(k));
+    assert.deepEqual(undefinedKeys, [], `no context term for: ${undefinedKeys.join(', ')}`);
+  };
+
+  it('defines a term for every property in an issued OtlLeiCredential', async () => {
+    const { credential } = await issueLeiCredential([OTL_CONTEXT_URL]);
+    assertAllDefined(credential['credentialSubject']);
+    await toNQuads(credential); // safe mode throws if anything is still dropped
+  });
+
+  it('defines a term for every property in an issued OtlHostingCredential', async () => {
+    const provider = new InMemoryKeyProvider();
+    await provider.generateKey('issuance', 'Ed25519');
+    const type = new OtlHostingCredentialType();
+    Object.defineProperty(type, 'additionalContexts', { value: [OTL_CONTEXT_URL] });
+    const credential = await issueCredential({
+      type,
+      input: { commonName: 'Example Participant', watchers: ['https://watcher-a.example.net'] },
+      issuer: ISSUER,
+      subject: SUBJECT,
+      provider,
+      keyLabel: 'issuance',
+      verificationMethod: `${ISSUER}#credential-issuance-key`,
+      credentialStatus: [statusEntryFor('https://lou.example.org/.well-known/status-lists/1', 8)],
+      validFrom: '2026-01-01T00:00:00Z',
+    });
+    assertAllDefined(credential['credentialSubject']);
+    await toNQuads(credential);
+  });
+});
+
 describe('JSON-LD - issuing and verifying never touch the network', () => {
   it('performs no context fetch beyond the bundled loader', async () => {
     // The loader above throws on any URL it does not know, so success here is
