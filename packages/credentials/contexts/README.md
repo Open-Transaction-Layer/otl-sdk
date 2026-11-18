@@ -28,11 +28,11 @@ With this context all 14 LEI fields and both hosting fields survive, which
 
 ## Status
 
-The identifier is `https://otl.network/contexts/identity/v1`, and the term
-namespace is `https://otl.network/ns/identity#`. The published copy lives in the
+The identifier is `https://www.otl.network/contexts/identity/v1`, and the term
+namespace is `https://www.otl.network/ns/identity#`. The published copy lives in the
 separate `otl-contexts` repository, served from GitHub Pages, and a test in
 `packages/credentials/test/context.test.ts` pins this file's SHA-384 so the two
-copies cannot drift apart unnoticed. The `otl.network` routes that point at it
+copies cannot drift apart unnoticed. The `www.otl.network` routes that point at it
 are not in place yet, and a credential that referenced a URL returning 404
 would fail to expand at all, so the issuer emits `credentials/v2` only.
 

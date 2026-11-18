@@ -60,9 +60,9 @@ describe('bundled JSON-LD context', () => {
       { documentLoader },
     );
     const node = expanded[0] as Record<string, unknown>;
-    assert.deepEqual(node['@type'], ['https://otl.network/ns/identity#OtlLeiCredential']);
+    assert.deepEqual(node['@type'], ['https://www.otl.network/ns/identity#OtlLeiCredential']);
     assert.ok(
-      Object.hasOwn(node, 'https://otl.network/ns/identity#lei'),
+      Object.hasOwn(node, 'https://www.otl.network/ns/identity#lei'),
       'lei must survive expansion rather than being dropped as an undefined term',
     );
   });
@@ -80,6 +80,6 @@ describe('the bundled context is the published context', () => {
     const { join } = await import('node:path');
     const bytes = readFileSync(join(import.meta.dirname, '..', 'contexts', 'otl-identity-v1.jsonld'));
     const digest = `sha384-${createHash('sha384').update(bytes).digest('base64')}`;
-    assert.equal(digest, 'sha384-V3oJGlUOx2/U7+LYVllNNYok1MWWzua9Sk2FIyakTjucp4cPAtfH9+DQ0Z6bZ0iF');
+    assert.equal(digest, 'sha384-Srbeo3NZCRpmSdOqOQoWj/+DUnJnlSNvtSscGCEld5eg+IAi/T+x9f74q1x1DfMb');
   });
 });

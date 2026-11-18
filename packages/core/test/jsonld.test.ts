@@ -264,7 +264,7 @@ const toNQuads = async (document: unknown, base?: string): Promise<string> =>
     ...(base === undefined ? {} : { base }),
   })) as string;
 
-const NS = 'https://otl.network/ns/identity#';
+const NS = 'https://www.otl.network/ns/identity#';
 
 describe('JSON-LD - the RDF layer, where two implementations agree or do not', () => {
   it('emits a statement carrying the value for all fourteen §4.9 fields, with no base IRI', async () => {

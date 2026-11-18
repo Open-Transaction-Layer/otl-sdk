@@ -144,7 +144,7 @@ The ones that affect use:
   **not sender-authenticated**.
 - **The JSON-LD context is not published at its URL.** `@otl/credentials`
   ships it and resolves it from disk, which is what makes expansion work, but
-  `https://otl.network/contexts/identity/v1` does not resolve. A verifier that
+  `https://www.otl.network/contexts/identity/v1` does not resolve. A verifier that
   does not use the bundled loader will therefore drop every term the context
   defines, and because `eddsa-jcs-2022` canonicalizes the raw JSON the
   signature will still verify, so that failure is silent. The URL is hashed
