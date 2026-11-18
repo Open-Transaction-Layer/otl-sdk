@@ -5,9 +5,10 @@ layer** — `did:webvh` identities, W3C Verifiable Credentials, Bitstring Status
 List revocation, and a local trust perimeter — as an SDK and a command line
 tool.
 
-Built against the *OTL Identity Layer Technical Specification* in
-[`specification/`](specification/identity-spec.md). Section references
-throughout the source (§3.2.1, §5.3, …) point at that document.
+Built against the *OTL Identity Layer Technical Specification*, which lives in
+the [`otl-specifications`](https://github.com/Open-Transaction-Layer/otl-specifications/blob/main/identity/identity-spec.md)
+repository. Section references throughout the source (§3.2.1, §5.3, …) point
+at that document.
 
 > **did:web is not supported.** The specification permits both methods; this
 > implementation resolves `did:webvh` only. `did:web` identifiers are rejected
@@ -157,5 +158,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md), the
 [code of conduct](CODE_OF_CONDUCT.md) and the
 [security policy](SECURITY.md).
 
-Licensed under [Apache-2.0](LICENSE). See [NOTICE](NOTICE) for third-party
-attribution.
+The code in this repository is licensed under [Apache-2.0](LICENSE). See
+[NOTICE](NOTICE) for third-party attribution. The specification lives in its
+own repository, [`otl-specifications`](https://github.com/Open-Transaction-Layer/otl-specifications),
+under the Community Specification License 1.0, as described on the
+[OTL licence page](https://www.otl.network/license.html).
