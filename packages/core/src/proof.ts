@@ -187,6 +187,8 @@ export interface VerifyProofOptions {
   readonly verificationMethod?: string;
   /** Require this `proofPurpose`. Defaults to `assertionMethod` (spec 6.3). */
   readonly expectedProofPurpose?: string | null;
+  /** The time `expires` is checked against. Defaults to now. */
+  readonly now?: Date;
 }
 
 /**
@@ -225,6 +227,20 @@ export async function verifyProof(options: VerifyProofOptions): Promise<Verifica
       reason: `Proof purpose is "${proof.proofPurpose}" but "${expectedProofPurpose}" was required`,
       proof,
     };
+  }
+
+  // `expires` is optional in Data Integrity, but once present it is part of the
+  // signed proof configuration and a verifier must not accept the proof after
+  // it. A value that is not a date fails closed rather than being ignored.
+  const expires: unknown = (proof as unknown as Record<string, unknown>)['expires'];
+  if (expires !== undefined) {
+    const expiresMs = typeof expires === 'string' ? Date.parse(expires) : Number.NaN;
+    if (Number.isNaN(expiresMs)) {
+      return { verified: false, reason: 'Proof expires is not a valid date-time', proof };
+    }
+    if (expiresMs <= (options.now ?? new Date()).getTime()) {
+      return { verified: false, reason: `Proof expired at ${JSON.stringify(expires)}`, proof };
+    }
   }
 
   try {

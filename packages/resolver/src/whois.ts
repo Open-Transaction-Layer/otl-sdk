@@ -150,7 +150,13 @@ export async function verifyWhois(options: VerifyWhoisOptions): Promise<WhoisVer
         ...resolveOptions,
         relationship: 'authentication',
       });
-      const result = await verifyProof({ document: presentation, publicKey: holderKey });
+      const result = await verifyProof({
+        document: presentation,
+        publicKey: holderKey,
+        // Spec 6.3: a presentation proof is an authentication proof, and a
+        // verifier MUST reject any other purpose.
+        expectedProofPurpose: 'authentication',
+      });
       presentationVerified = result.verified;
       if (!result.verified) presentationIssue = result.reason ?? 'Presentation proof did not verify';
     } catch (error) {

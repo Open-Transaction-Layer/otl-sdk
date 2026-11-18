@@ -240,6 +240,13 @@ export async function validateDidLog(
   let previous: DidLogEntry | undefined;
   let previousTime: { readonly text: string; readonly ms: number } | undefined;
   let inheritedUpdateKeys: readonly string[] = [];
+  // The most recent nextKeyHashes any entry set. An absent parameter keeps
+  // its earlier value, so pre-rotation stays active until an entry sets it to
+  // an empty list, rather than lapsing because one entry omitted it.
+  let committedKeyHashes: readonly string[] = [];
+  // Set by an entry with an empty updateKeys list, after which no entry can be
+  // authorized at all.
+  let terminated = false;
   let deactivated = false;
   const portable = genesis.parameters.portable === true;
 
@@ -248,6 +255,13 @@ export async function validateDidLog(
 
     if (deactivated) {
       add('Entry follows a deactivated DID; no further entries are permitted', number);
+    }
+    if (terminated) {
+      add(
+        'Entry follows one with an empty updateKeys list, which leaves no key able to ' +
+          'authorize a later entry; no further entries are permitted',
+        number,
+      );
     }
 
     if (!isWellShapedEntry(entry)) {
@@ -316,10 +330,21 @@ export async function validateDidLog(
       if (entry.parameters.portable === true) {
         add('portable MUST NOT be enabled after the genesis entry', number);
       }
+      // The profile, and so the accepted algorithms, is chosen once from the
+      // genesis entry. A later entry that changes method would be checked
+      // under rules it did not declare, so refuse it rather than guess.
+      const method: unknown = entry.parameters.method;
+      if (method !== undefined && method !== genesis.parameters.method) {
+        addUnsupported(
+          `Entry changes method from "${String(genesis.parameters.method)}" to ` +
+            `${JSON.stringify(method)}; a change of method within one log is not supported`,
+          number,
+        );
+      }
     }
 
     // Pre-rotation.
-    const preRotationWasActive = (previous?.parameters.nextKeyHashes ?? []).length > 0;
+    const preRotationWasActive = number > 1 && committedKeyHashes.length > 0;
     const updateKeys =
       entry.parameters.updateKeys ?? (preRotationWasActive ? undefined : inheritedUpdateKeys);
 
@@ -340,6 +365,24 @@ export async function validateDidLog(
     // is still verified against whichever keys were active before it.
     const terminal = updateKeys.length === 0;
 
+    // While pre-rotation is active an entry is authorized by its own
+    // updateKeys, so an empty list authorizes nothing. Letting the keys before
+    // it sign instead would let whoever holds the current key, which is the
+    // compromise pre-rotation exists to contain, end the log or (before the
+    // rule above) hand it to keys nobody committed to. A controller who wants
+    // to close the log turns pre-rotation off in an earlier entry first.
+    if (terminal && preRotationWasActive) {
+      add(
+        'updateKeys MUST NOT be empty while pre-rotation is active; an entry setting ' +
+          'nextKeyHashes to [] must come first',
+        number,
+      );
+      if (entry.parameters.deactivated === true) deactivated = true;
+      terminated = true;
+      previous = entry;
+      continue;
+    }
+
     if (requirePreRotation && !terminal && (entry.parameters.nextKeyHashes ?? []).length === 0) {
       add(
         'nextKeyHashes is empty or absent; pre-rotation is required in every entry, so a ' +
@@ -349,9 +392,8 @@ export async function validateDidLog(
     }
 
     if (number > 1 && preRotationWasActive && !terminal) {
-      const committed = previous?.parameters.nextKeyHashes ?? [];
       for (const key of updateKeys) {
-        if (!committed.includes(deriveKeyHash(key))) {
+        if (!committedKeyHashes.includes(deriveKeyHash(key))) {
           add(
             `updateKey "${truncate(key)}" was not committed by the previous entry's nextKeyHashes. ` +
               `Under pre-rotation every update key must be committed in advance, including retained ones.`,
@@ -408,6 +450,10 @@ export async function validateDidLog(
 
     if (entry.parameters.deactivated === true) deactivated = true;
     if (!terminal) inheritedUpdateKeys = updateKeys;
+    if (terminal) terminated = true;
+    if (entry.parameters.nextKeyHashes !== undefined) {
+      committedKeyHashes = entry.parameters.nextKeyHashes;
+    }
     previous = entry;
   }
 

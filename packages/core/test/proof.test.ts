@@ -358,3 +358,47 @@ describe('Data Integrity proof - malformed and overriding input', () => {
     assert.equal((await verifyProof({ document: secured, publicKey: key.publicKey })).verified, true);
   });
 });
+
+describe('Data Integrity proof - expires', () => {
+  async function signWithExpiry(expires: unknown) {
+    const provider = new InMemoryKeyProvider();
+    const key = await provider.generateKey('issuance', 'Ed25519');
+    const secured = await createProof({
+      document: CREDENTIAL,
+      provider,
+      keyLabel: 'issuance',
+      verificationMethod: VM,
+      additionalProperties: { expires },
+    });
+    return { key, secured };
+  }
+
+  it('accepts a proof before it expires', async () => {
+    const { key, secured } = await signWithExpiry('2030-01-01T00:00:00Z');
+    const result = await verifyProof({
+      document: secured,
+      publicKey: key.publicKey,
+      now: new Date('2029-12-31T23:59:59Z'),
+    });
+    assert.equal(result.verified, true, result.reason ?? 'no reason reported');
+  });
+
+  it('refuses a proof once it has expired', async () => {
+    const { key, secured } = await signWithExpiry('2030-01-01T00:00:00Z');
+    const result = await verifyProof({
+      document: secured,
+      publicKey: key.publicKey,
+      now: new Date('2030-01-01T00:00:00Z'),
+    });
+    assert.equal(result.verified, false);
+    assert.match(result.reason ?? '', /expired/);
+  });
+
+  it('refuses a proof whose expires is not a date', async () => {
+    for (const expires of ['soon', 1_900_000_000, null]) {
+      const { key, secured } = await signWithExpiry(expires);
+      const result = await verifyProof({ document: secured, publicKey: key.publicKey });
+      assert.equal(result.verified, false, String(expires));
+    }
+  });
+});

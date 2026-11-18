@@ -302,6 +302,15 @@ async function checkRevocation(
       issues.push(`Unsupported statusPurpose "${statusPurpose}"`);
       continue;
     }
+    // Spec 5.1: a revocation entry is one bit. Reading a wider entry as one bit
+    // would give the wrong answer, so any other size is refused.
+    const statusSize: unknown = entry.statusSize;
+    if (statusSize !== undefined && statusSize !== 1) {
+      issues.push(
+        `Unsupported statusSize ${JSON.stringify(statusSize)}; revocation entries are 1 bit (spec 5.1)`,
+      );
+      continue;
+    }
     if (entry.id !== undefined && entry.id === entry.statusListCredential) {
       issues.push('credentialStatus.id MUST NOT equal the statusListCredential URL (spec 5.1)');
     }

@@ -113,6 +113,13 @@ describe('DID to URL (spec 2.3)', () => {
     assert.throws(() => parseDid(`did:webvh:${SCID}:example.com:..:etc`), InvalidDidError);
   });
 
+  it('rejects path segments that decode to a separator, query, fragment or control character', () => {
+    for (const segment of ['a%2F..%2F..%2Fadmin', 'x%23', 'x%3Fq%3D1', 'a%5Cb', 'a%00b', 'a%0Ab']) {
+      const bad = `did:webvh:${SCID}:example.com:${segment}`;
+      assert.throws(() => parseDid(bad), InvalidDidError, bad);
+    }
+  });
+
   it('rejects a host that is not a hostname', () => {
     assert.throws(() => parseDid(`did:webvh:${SCID}:not%2Fa%2Fhost`), InvalidDidError);
   });
@@ -634,7 +641,11 @@ describe('DID head memory (threat T-RES-02)', () => {
 
 describe('whois and the full chain (spec 4.4, 5.3)', () => {
   async function publishEverything(
-    options: { revoked?: boolean; holderKeyPurposes?: ('assertionMethod' | 'authentication')[] } = {},
+    options: {
+      revoked?: boolean;
+      holderKeyPurposes?: ('assertionMethod' | 'authentication')[];
+      presentationProofPurpose?: string;
+    } = {},
   ) {
     const lou = await publishParticipant();
     // A hosting provider is a different entity from the LOU, with its own
@@ -754,6 +765,7 @@ describe('whois and the full chain (spec 4.4, 5.3)', () => {
       provider: vasp,
       keyLabel: 'assertion',
       verificationMethod: `${vaspDid.did}#assertion-key`,
+      proofPurpose: options.presentationProofPurpose ?? 'authentication',
     })) as unknown as VerifiablePresentation;
 
     const routes: Record<string, string> = {
@@ -813,6 +825,26 @@ describe('whois and the full chain (spec 4.4, 5.3)', () => {
 
     assert.equal(result.presentationVerified, false);
     assert.match(result.presentationIssue ?? '', /under authentication/);
+    assert.equal(result.valid.length, 0);
+  });
+
+  it('refuses a presentation whose proof purpose is not authentication (spec 6.3)', async () => {
+    const { routes, vaspDid, trustPerimeter } = await publishEverything({
+      presentationProofPurpose: 'assertionMethod',
+    });
+    const fetchImpl = serveMap(routes);
+
+    const result = await verifyWhois({
+      did: vaspDid.did,
+      registry: defaultRegistry(),
+      trustPerimeter,
+      resolveAssertionKey: resolveAssertionKey({ fetch: fetchImpl }),
+      fetchStatusList: (url) => Promise.resolve(JSON.parse(routes[url]!) as StatusListCredential),
+      fetchOptions: { fetch: fetchImpl },
+    });
+
+    assert.equal(result.presentationVerified, false);
+    assert.match(result.presentationIssue ?? '', /"authentication" was required/);
     assert.equal(result.valid.length, 0);
   });
 

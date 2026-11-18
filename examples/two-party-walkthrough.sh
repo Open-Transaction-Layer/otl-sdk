@@ -18,6 +18,9 @@ trap 'kill $(jobs -p) 2>/dev/null || true; rm -rf "${WORK}"' EXIT
 
 LOU_PORT=8443
 VASP_PORT=8444
+# Every party here is on localhost, which the resolver refuses by default as a
+# private address. Commands that fetch from another party opt in explicitly.
+LOCAL=--allow-private-addresses
 # Generated per run rather than hardcoded. These protect throwaway keys in a
 # directory deleted on exit, so nothing is at stake here -- but an example is
 # copied, and a literal passphrase in a script is the wrong thing to copy.
@@ -85,7 +88,7 @@ note "LOU  → https://localhost:${LOU_PORT}/.well-known/did.jsonl"
 note "VASP → https://localhost:${VASP_PORT}/.well-known/did.jsonl"
 
 step "4. A counterparty validates the VASP's DID to genesis"
-OTL_HOME=$PEER_HOME $OTL validate "$VASP_DID" 2>/dev/null | sed 's/^/   /'
+OTL_HOME=$PEER_HOME $OTL validate "$VASP_DID" "$LOCAL" 2>/dev/null | sed 's/^/   /'
 
 step "5. The LOU issues an LEI credential to the VASP"
 # 00000000000000000098 is a synthetic LEI with valid ISO 17442 check digits.
@@ -109,14 +112,14 @@ OTL_HOME=$VASP_HOME $OTL export --json >/dev/null 2>&1
 note "published https://localhost:${VASP_PORT}/.well-known/whois.vp"
 
 step "7. The counterparty fetches the credential — with an EMPTY trust perimeter"
-OTL_HOME=$PEER_HOME $OTL credential fetch "$VASP_DID" 2>&1 | sed 's/^/   /' || true
+OTL_HOME=$PEER_HOME $OTL credential fetch "$VASP_DID" "$LOCAL" 2>&1 | sed 's/^/   /' || true
 note "rejected: no protocol-defined root of trust exists (spec 4.6)"
 
 step "8. The counterparty decides to trust this LOU"
 OTL_HOME=$PEER_HOME $OTL trust add --did "$LOU_DID" --note "walkthrough LOU" 2>/dev/null | sed 's/^/   /'
 
 step "9. It fetches again — now valid"
-OTL_HOME=$PEER_HOME $OTL credential fetch "$VASP_DID" 2>/dev/null | sed 's/^/   /'
+OTL_HOME=$PEER_HOME $OTL credential fetch "$VASP_DID" "$LOCAL" 2>/dev/null | sed 's/^/   /'
 
 step "10. The LOU revokes the credential"
 CRED_ID=$(node -p "JSON.parse(require('fs').readFileSync('${WORK}/credential.json','utf8')).id")
@@ -124,6 +127,7 @@ OTL_HOME=$LOU_HOME $OTL credential revoke --credential "$CRED_ID" 2>/dev/null | 
 OTL_HOME=$LOU_HOME $OTL export --json >/dev/null 2>&1
 
 step "11. The counterparty fetches once more — now INVALID"
-OTL_HOME=$PEER_HOME $OTL credential fetch "$VASP_DID" 2>/dev/null | sed 's/^/   /'
+# Exits 2 because the credential is no longer valid, which is the point here.
+OTL_HOME=$PEER_HOME $OTL credential fetch "$VASP_DID" "$LOCAL" 2>/dev/null | sed 's/^/   /' || true
 
 printf '\n\033[1mDone.\033[0m Nothing was trusted by default; the counterparty had to choose.\n'

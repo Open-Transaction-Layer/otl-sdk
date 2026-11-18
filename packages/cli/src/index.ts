@@ -29,6 +29,7 @@ import {
   cmdAddIssuanceKey,
   cmdIssue,
   cmdIssueHosting,
+  cmdRefreshStatus,
   cmdRevoke,
   cmdStatusList,
 } from './commands/credential.ts';
@@ -60,6 +61,7 @@ const COMMANDS: Record<string, Handler> = {
   'credential issue-hosting': cmdIssueHosting,
   'credential status-list': cmdStatusList,
   'credential revoke': cmdRevoke,
+  'credential refresh-status': cmdRefreshStatus,
   'credential fetch': cmdCredentialFetch,
   'credential add': cmdCredentialAdd,
   'credential held': cmdCredentialHeld,
@@ -95,6 +97,8 @@ Credentials (issuer)
                                    [--list-id <id>] [--valid-until <iso>]
   credential status-list [--list-id <id>]
   credential revoke --credential <id>
+  credential refresh-status [--list-id <id>]
+                                   re-sign a status list before it expires (1 hour)
 
 Credentials (subject)
   credential add --file <path>     store a credential issued to you
@@ -110,6 +114,7 @@ Trust perimeter (spec 6.1 — nothing is trusted by default)
 Cryptography
   sign --key <label> (--message <m> | --file <p>)
   verify --did <did> --key <label> --signature <s> (--message <m> | --file <p>)
+                                   [--relationship assertionMethod|authentication]
   encrypt --did <did> --key <label> (--message <m> | --file <p>) [--sender <text>]
   decrypt --key <label> (--jwe <jwe> | --file <p>)
 

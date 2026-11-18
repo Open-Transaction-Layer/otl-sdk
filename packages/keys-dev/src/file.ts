@@ -92,6 +92,8 @@ export class FileKeyProvider
   override readonly id = 'file';
   readonly #directory: string;
   readonly #passphrase: string;
+  /** Key files whose public key has been checked against the private key. */
+  readonly #verified = new Map<string, string>();
 
   constructor(options: FileKeyProviderOptions) {
     super();
@@ -119,14 +121,14 @@ export class FileKeyProvider
   }
 
   override async getKey(label: string): Promise<KeyInfo> {
-    return toKeyInfo(this.#readFile(label), this.id);
+    return toKeyInfo(this.#readVerifiedFile(label), this.id);
   }
 
   override async listKeys(): Promise<readonly KeyInfo[]> {
     if (!existsSync(this.#directory)) return [];
     return readdirSync(this.#directory)
       .filter((f) => f.endsWith('.json'))
-      .map((f) => toKeyInfo(this.#readFile(f.slice(0, -'.json'.length)), this.id));
+      .map((f) => toKeyInfo(this.#readVerifiedFile(f.slice(0, -'.json'.length)), this.id));
   }
 
   override async sign(label: string, message: Uint8Array): Promise<Uint8Array> {
@@ -196,7 +198,41 @@ export class FileKeyProvider
     if (parsed.version !== FILE_VERSION) {
       throw new InvalidKeyError(`Key file for "${label}" has unsupported version ${parsed.version}`);
     }
+    if (parsed.label !== label) {
+      throw new InvalidKeyError(`Key file for "${label}" is labelled "${parsed.label}"`);
+    }
     return parsed;
+  }
+
+  /**
+   * Read a key file and confirm its public key belongs to its private key.
+   *
+   * The public key, curve and label sit in clear beside the ciphertext, which
+   * the GCM tag does not cover. Without this check, someone able to write to
+   * the directory could change the public key `getKey` reports, so that a DID
+   * document or a pre-rotation commitment names a key of their choosing while
+   * signing still uses the real one. Each file is checked once per instance.
+   */
+  #readVerifiedFile(label: string): KeyFile {
+    const file = this.#readFile(label);
+    const fingerprint = JSON.stringify(file);
+    if (this.#verified.get(label) === fingerprint) return file;
+
+    let actual: string;
+    try {
+      actual = toPublicKeyMultibase(publicKeyFrom(this.#decryptPrivateKey(file), file.curve));
+    } catch (cause) {
+      if (cause instanceof InvalidKeyError) throw cause;
+      throw new InvalidKeyError(`Key file for "${label}" does not hold a ${file.curve} key`, { cause });
+    }
+    if (actual !== file.publicKeyMultibase) {
+      throw new InvalidKeyError(
+        `Key file for "${label}" records a public key that does not match its private key; ` +
+          `the file has been modified`,
+      );
+    }
+    this.#verified.set(label, fingerprint);
+    return file;
   }
 
   #encryptPrivateKey(pkcs8: Uint8Array): KeyFile['privateKey'] {

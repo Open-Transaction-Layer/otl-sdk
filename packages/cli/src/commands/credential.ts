@@ -306,6 +306,43 @@ export async function cmdStatusList(args: ParsedArgs, store: Store, out: Output)
   out.print(statusListUrlFor(meta, listId));
   out.print(`  entries: ${bitstringFrom(credential).length}`);
   out.print(`  revoked: ${revoked.length === 0 ? 'none' : revoked.join(', ')}`);
+  const validUntil = credential.validUntil;
+  if (validUntil !== undefined) {
+    const expired = Date.parse(validUntil) <= Date.now();
+    out.print(`  valid until: ${validUntil}${expired ? ' (EXPIRED)' : ''}`);
+    if (expired) {
+      out.warn(
+        'This list has expired, so verifiers reject every credential that points at it (spec 5.2).\n' +
+          `  Re-sign it with: otl credential refresh-status --list-id ${listId}`,
+      );
+    }
+  }
+}
+
+/**
+ * Re-sign a status list with a fresh validity window, leaving every bit as it
+ * is. Spec 5.2 has the issuer publish a new version before `validUntil`, and a
+ * verifier rejects every credential that points at an expired list, so an
+ * issuer runs this on a schedule shorter than the list lifetime.
+ */
+export async function cmdRefreshStatus(args: ParsedArgs, store: Store, out: Output): Promise<void> {
+  const meta = store.resolveMeta(optionalOption(args, 'did'));
+  requireIssuanceKey(meta);
+  const listId = listIdOption(args);
+
+  if (!existsSync(statusListPath(store, meta, listId))) {
+    throw new CliError(`${meta.did} has published no status list ${listId}`, {
+      hint: 'A list is created when the first credential is issued.',
+    });
+  }
+
+  const statusList = await publishStatusList(store, meta, listId, loadStatusList(store, meta, listId));
+  if (out.json) {
+    out.data(statusList);
+  } else {
+    out.success(`Re-signed ${statusListUrlFor(meta, listId)}, valid until ${String(statusList.validUntil)}`);
+    out.print('  Publish the export directory again so verifiers see the new version.');
+  }
 }
 
 /** Revoke a credential by setting its bit and republishing (spec 5). */

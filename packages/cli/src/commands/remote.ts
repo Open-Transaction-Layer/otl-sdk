@@ -92,8 +92,15 @@ export async function cmdCredentialFetch(args: ParsedArgs, store: Store, out: Ou
     fetchOptions,
   });
 
+  // A script reads the exit code, so anything short of a verified presentation
+  // with every recognised credential valid must not exit 0.
+  const failed = !result.presentationVerified || result.credentials.some((c) => !c.skipped && !c.valid);
+  const failure = () =>
+    new CliError('The presentation or a credential in it failed validation', { exitCode: 2 });
+
   if (out.json) {
     out.data(result);
+    if (failed) throw failure();
     return;
   }
 
@@ -109,6 +116,7 @@ export async function cmdCredentialFetch(args: ParsedArgs, store: Store, out: Ou
     out.print(`  - ${credential.typeName}: ${credential.valid ? 'valid' : 'INVALID'}`);
     for (const issue of credential.issues) out.print(`      ${issue}`);
   }
+  if (failed) throw failure();
 }
 
 // ---------------------------------------------------------------------------

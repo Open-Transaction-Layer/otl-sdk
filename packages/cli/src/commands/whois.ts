@@ -116,7 +116,7 @@ export async function cmdWhoisPublish(args: ParsedArgs, store: Store, out: Outpu
     provider,
     keyLabel,
     verificationMethod: `${meta.did}#${keyLabel}`,
-    proofPurpose: 'assertionMethod',
+    proofPurpose: 'authentication',
   });
 
   const path = store.writeExportArtifact(meta.scid, 'whois.vp', presentation);

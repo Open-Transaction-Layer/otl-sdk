@@ -45,6 +45,20 @@ function decodeSegment(did: string, segment: string): string {
   }
 }
 
+/**
+ * True when a decoded path segment holds "/", "?", "#", a backslash, a C0
+ * control character or DEL. The control range is tested by code point because
+ * a regular expression for it trips `no-control-regex`.
+ */
+function hasReservedOrControlCharacter(segment: string): boolean {
+  for (let i = 0; i < segment.length; i++) {
+    const code = segment.charCodeAt(i);
+    if (code <= 0x1f || code === 0x7f) return true;
+    if (segment[i] === '/' || segment[i] === '?' || segment[i] === '#' || segment[i] === '\\') return true;
+  }
+  return false;
+}
+
 export function parseDid(did: string): ParsedDid {
   if (!did.startsWith('did:webvh:')) {
     throw new InvalidDidError(`"${did}" is not a did:webvh identifier`);
@@ -74,6 +88,12 @@ export function parseDid(did: string): ParsedDid {
   const pathSegments = rest.slice(1).map((segment) => decodeSegment(did, segment));
   if (pathSegments.some((segment) => segment === '' || segment === '.' || segment === '..')) {
     throw new InvalidDidError(`"${did}" contains an empty or relative path segment`);
+  }
+  // Each segment becomes exactly one URL path segment. A decoded "/", "?",
+  // "#" or backslash would let the DID choose other paths, a query or a
+  // fragment on its host, so it is refused rather than re-encoded.
+  if (pathSegments.some(hasReservedOrControlCharacter)) {
+    throw new InvalidDidError(`"${did}" has a path segment that decodes to a reserved or control character`);
   }
 
   return { did, scid, host, pathSegments, origin: `https://${host}` };

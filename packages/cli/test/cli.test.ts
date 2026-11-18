@@ -604,3 +604,41 @@ describe('CLI - serve', () => {
     assert.match(result.stderr, /openssl req/);
   });
 });
+
+describe('CLI - status list refresh', () => {
+  it('re-signs a list with a later validUntil and the same bits (spec 5.2)', async () => {
+    const home = freshHome();
+    await otl(home, 'did', 'create', '--domain', 'hosting.example.org', '--json');
+    await otl(home, 'credential', 'add-issuance-key', '--json');
+
+    const none = await otl(home, 'credential', 'refresh-status');
+    assert.equal(none.code, 1);
+    assert.match(none.stderr, /no status list/);
+
+    const issued = json<{ credential: { id: string } }>(
+      await otl(
+        home,
+        'credential',
+        'issue-hosting',
+        '--subject',
+        'did:webvh:QmTestScidForHostedParticipant0001:vasp.example.com',
+        '--common-name',
+        'Example VASP',
+        '--json',
+      ),
+    );
+    const revoked = await otl(home, 'credential', 'revoke', '--credential', issued.credential.id);
+    assert.equal(revoked.code, 0, revoked.stderr);
+    const before = json<{ validUntil: string; credentialSubject: { encodedList: string } }>(
+      await otl(home, 'credential', 'status-list', '--json'),
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    const refreshed = await otl(home, 'credential', 'refresh-status', '--json');
+    assert.equal(refreshed.code, 0, refreshed.stderr);
+    const after = json<{ validUntil: string; credentialSubject: { encodedList: string } }>(refreshed);
+
+    assert.ok(Date.parse(after.validUntil) > Date.parse(before.validUntil));
+    assert.equal(after.credentialSubject.encodedList, before.credentialSubject.encodedList);
+  });
+});

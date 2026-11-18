@@ -82,8 +82,12 @@ describe('JCS - strings', () => {
     assert.equal(canonicalize(value), '"' + value + '"');
   });
 
-  it('escapes lone surrogates', () => {
-    assert.equal(canonicalize('\ud800'), String.raw`"\ud800"`);
+  it('refuses lone surrogates, which RFC 8785 input (I-JSON) excludes', () => {
+    for (const bad of ['\ud800', 'a\udc00b', '\ude00\ud83d']) {
+      assert.throws(() => canonicalize(bad), CanonicalizationError);
+      assert.throws(() => canonicalize({ [bad]: 1 }), CanonicalizationError);
+    }
+    assert.equal(canonicalize('\ud83d\ude00'), '"\u{1F600}"');
   });
 
   it('does not escape the forward slash', () => {
@@ -92,6 +96,12 @@ describe('JCS - strings', () => {
 });
 
 describe('JCS - structure', () => {
+  it('refuses a sparse array rather than emitting an empty slot', () => {
+    // eslint-disable-next-line no-sparse-arrays -- the hole is the point
+    assert.throws(() => canonicalize([1, , 2]), CanonicalizationError);
+    assert.throws(() => canonicalize(new Array(2)), CanonicalizationError);
+  });
+
   it('emits no insignificant whitespace', () => {
     assert.equal(canonicalize({ a: [1, 2, { b: 3 }] }), '{"a":[1,2,{"b":3}]}');
   });

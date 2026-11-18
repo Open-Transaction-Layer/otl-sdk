@@ -42,9 +42,21 @@ export async function cmdVerify(args: ParsedArgs, _store: Store, out: Output): P
   const signature = requireOption(args, 'signature');
   const message = await readMessage(args);
 
+  // A key counts only when the DID designated it for signing, so a key held
+  // for some other purpose is never accepted.
+  const relationship = optionalOption(args, 'relationship') ?? 'assertionMethod';
+  if (relationship !== 'assertionMethod' && relationship !== 'authentication') {
+    throw new CliError(`Invalid --relationship "${relationship}"`, {
+      hint: 'Use assertionMethod or authentication.',
+    });
+  }
+
   // Resolution validates the log to genesis before returning a key, so a
   // signature can never be checked against an unvalidated document.
-  const publicKey = await resolveVerificationKey(did, keyLabel, fetchOptionsFrom(args));
+  const publicKey = await resolveVerificationKey(did, keyLabel, {
+    ...fetchOptionsFrom(args),
+    relationship,
+  });
   const verified = verifyRaw({ message, signature, publicKey });
 
   out.json ? out.data({ verified, did, keyLabel }) : out.print(verified ? 'verified' : 'NOT VERIFIED');

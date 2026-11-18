@@ -89,9 +89,38 @@ describe('FileKeyProvider', () => {
     await freshProvider(directory).generateKey('locked', 'Ed25519');
 
     const wrong = new FileKeyProvider({ directory, passphrase: 'not the passphrase' });
-    // Public metadata is readable — only the private key is protected.
-    await wrong.getKey('locked');
+    // getKey checks the public key against the private key, so it needs the
+    // passphrase too.
+    await assert.rejects(() => wrong.getKey('locked'), InvalidKeyError);
     await assert.rejects(() => wrong.sign('locked', new TextEncoder().encode('x')), InvalidKeyError);
+  });
+
+  it('refuses a key file whose recorded public key was swapped', async () => {
+    // Someone who can write to the directory must not be able to make getKey
+    // report a key of their choosing, which would then be published or
+    // committed to while signing still used the real key.
+    const directory = freshDir();
+    const provider = freshProvider(directory);
+    await provider.generateKey('victim', 'Ed25519');
+    await provider.generateKey('other', 'Ed25519');
+    const otherFile = JSON.parse(readFileSync(join(directory, 'other.json'), 'utf8')) as {
+      publicKeyMultibase: string;
+    };
+
+    const path = join(directory, 'victim.json');
+    const file = JSON.parse(readFileSync(path, 'utf8')) as { publicKeyMultibase: string };
+    file.publicKeyMultibase = otherFile.publicKeyMultibase;
+    writeFileSync(path, JSON.stringify(file));
+
+    await assert.rejects(() => freshProvider(directory).getKey('victim'), /does not match its private key/);
+    await assert.rejects(() => freshProvider(directory).listKeys(), InvalidKeyError);
+  });
+
+  it('refuses a key file copied under another label', async () => {
+    const directory = freshDir();
+    await freshProvider(directory).generateKey('original', 'Ed25519');
+    writeFileSync(join(directory, 'copy.json'), readFileSync(join(directory, 'original.json')));
+    await assert.rejects(() => freshProvider(directory).getKey('copy'), /is labelled "original"/);
   });
 
   it('detects tampering with the stored ciphertext', async () => {

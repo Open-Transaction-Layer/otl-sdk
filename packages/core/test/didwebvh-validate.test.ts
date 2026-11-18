@@ -5,7 +5,7 @@ import { InMemoryKeyProvider } from '@otl/keys-dev';
 import { createDid } from '../src/didwebvh/create.ts';
 import { DIDWEBVH_1_0_PROFILE, OTL_EXTENDED_PROFILE } from '../src/didwebvh/profile.ts';
 import { addService, deactivate } from '../src/didwebvh/update.ts';
-import { deriveEntryHash, parseVersionId } from '../src/didwebvh/hashing.ts';
+import { deriveEntryHash, deriveKeyHash, parseVersionId } from '../src/didwebvh/hashing.ts';
 import { createProof } from '../src/proof.ts';
 import { parseDidLog, validateDidLog } from '../src/didwebvh/validate.ts';
 import type { DidLogEntry } from '../src/didwebvh/types.ts';
@@ -952,5 +952,174 @@ describe('versionId parsing', () => {
     ]) {
       assert.throws(() => parseVersionId(versionId), InvalidDocumentError, versionId);
     }
+  });
+});
+
+describe('validation - an empty updateKeys list cannot sidestep pre-rotation', () => {
+  /** Signs an entry with arbitrary parameters, which the builders refuse to produce. */
+  async function signedEntry(options: {
+    previousEntry: DidLogEntry;
+    provider: InMemoryKeyProvider;
+    signingKeyLabel: string;
+    parameters: Record<string, unknown>;
+    versionTime: string;
+    state?: DidLogEntry['state'];
+  }): Promise<DidLogEntry> {
+    const { previousEntry, provider, signingKeyLabel, parameters, versionTime } = options;
+    const previousVersion = parseVersionId(previousEntry.versionId).versionNumber;
+    const unhashed = {
+      versionId: previousEntry.versionId,
+      versionTime,
+      parameters,
+      state: options.state ?? previousEntry.state,
+    } as unknown as DidLogEntry;
+    const entryHash = deriveEntryHash(unhashed, previousEntry.versionId);
+    const unsigned = { ...unhashed, versionId: `${previousVersion + 1}-${entryHash}` };
+    const multikey = toPublicKeyMultibase((await provider.getKey(signingKeyLabel)).publicKey);
+    return (await createProof({
+      document: unsigned,
+      provider,
+      keyLabel: signingKeyLabel,
+      verificationMethod: `did:key:${multikey}#${multikey}`,
+      proofPurpose: 'assertionMethod',
+    })) as unknown as DidLogEntry;
+  }
+
+  const T4 = '2026-04-01T00:00:00Z';
+  const multikeyOf = async (provider: InMemoryKeyProvider, label: string) =>
+    toPublicKeyMultibase((await provider.getKey(label)).publicKey);
+
+  it('refuses a takeover by the holder of the current key alone', async () => {
+    // Entry 2 is signed by k1 and commits to k2, which stays offline. An
+    // attacker who has stolen only k1 must not be able to rewrite the DID.
+    const { provider, entries } = await validLog();
+    const [genesis, entry2] = entries as [DidLogEntry, DidLogEntry];
+    await provider.generateKey('attacker', 'Ed25519');
+    const attackerKey = await multikeyOf(provider, 'attacker');
+
+    const emptied = await signedEntry({
+      previousEntry: entry2,
+      provider,
+      signingKeyLabel: 'k1',
+      parameters: { updateKeys: [] },
+      versionTime: T3,
+    });
+    const hijacked = await signedEntry({
+      previousEntry: emptied,
+      provider,
+      signingKeyLabel: 'k1',
+      parameters: { updateKeys: [attackerKey], nextKeyHashes: [deriveKeyHash(attackerKey)] },
+      versionTime: T4,
+      state: {
+        ...entry2.state,
+        service: [{ id: '#whois', type: 'OtlWhois', serviceEndpoint: 'https://attacker.example/whois.vp' }],
+      },
+    });
+
+    for (const requirePreRotation of [true, false]) {
+      const result = await validateDidLog([genesis, entry2, emptied, hijacked], { requirePreRotation });
+      assert.equal(result.valid, false, `requirePreRotation=${String(requirePreRotation)}`);
+      assert.match(messages(result), /MUST NOT be empty while pre-rotation is active/);
+      assert.match(messages(result), /follows one with an empty updateKeys list/);
+    }
+  });
+
+  it('refuses deactivation by the current key alone while pre-rotation is active', async () => {
+    const { provider, entries } = await validLog();
+    const [genesis, entry2] = entries as [DidLogEntry, DidLogEntry];
+    const closed = await signedEntry({
+      previousEntry: entry2,
+      provider,
+      signingKeyLabel: 'k1',
+      parameters: { updateKeys: [], deactivated: true },
+      versionTime: T3,
+    });
+    const result = await validateDidLog([genesis, entry2, closed], { requirePreRotation: false });
+    assert.equal(result.valid, false);
+    assert.match(messages(result), /MUST NOT be empty while pre-rotation is active/);
+  });
+
+  it('still accepts an empty updateKeys list once pre-rotation is off, and nothing after it', async () => {
+    const { provider, entries } = await validLog();
+    const [genesis, entry2] = entries as [DidLogEntry, DidLogEntry];
+    const k2 = await multikeyOf(provider, 'k2');
+    const preRotationOff = await signedEntry({
+      previousEntry: entry2,
+      provider,
+      signingKeyLabel: 'k2',
+      parameters: { updateKeys: [k2], nextKeyHashes: [] },
+      versionTime: T3,
+    });
+    const closed = await signedEntry({
+      previousEntry: preRotationOff,
+      provider,
+      signingKeyLabel: 'k2',
+      parameters: { updateKeys: [], deactivated: true },
+      versionTime: T4,
+    });
+    const accepted = await validateDidLog([genesis, entry2, preRotationOff, closed], {
+      requirePreRotation: false,
+    });
+    assert.equal(accepted.valid, true, messages(accepted));
+
+    const after = await signedEntry({
+      previousEntry: closed,
+      provider,
+      signingKeyLabel: 'k2',
+      parameters: { updateKeys: [k2] },
+      versionTime: '2026-05-01T00:00:00Z',
+    });
+    const refused = await validateDidLog([genesis, entry2, preRotationOff, closed, after], {
+      requirePreRotation: false,
+    });
+    assert.equal(refused.valid, false);
+    assert.match(messages(refused), /follows one with an empty updateKeys list/);
+  });
+
+  it('keeps pre-rotation active when an entry omits nextKeyHashes', async () => {
+    // did:webvh parameters that are absent keep their earlier value, so
+    // omitting nextKeyHashes must not quietly switch the commitment check off.
+    const { provider, entries } = await validLog();
+    const [genesis, entry2] = entries as [DidLogEntry, DidLogEntry];
+    await provider.generateKey('outsider', 'Ed25519');
+    const k2 = await multikeyOf(provider, 'k2');
+    const silent = await signedEntry({
+      previousEntry: entry2,
+      provider,
+      signingKeyLabel: 'k2',
+      parameters: { updateKeys: [k2] },
+      versionTime: T3,
+    });
+    const swapped = await signedEntry({
+      previousEntry: silent,
+      provider,
+      signingKeyLabel: 'k2',
+      parameters: { updateKeys: [await multikeyOf(provider, 'outsider')] },
+      versionTime: T4,
+    });
+    const result = await validateDidLog([genesis, entry2, silent, swapped], { requirePreRotation: false });
+    assert.equal(result.valid, false);
+    assert.match(messages(result), /was not committed/);
+  });
+
+  it('refuses a later entry that changes method', async () => {
+    const { provider, entries } = await validLog();
+    const [genesis, entry2] = entries as [DidLogEntry, DidLogEntry];
+    const k2 = await multikeyOf(provider, 'k2');
+    await provider.generateKey('k9', 'Ed25519');
+    const changed = await signedEntry({
+      previousEntry: entry2,
+      provider,
+      signingKeyLabel: 'k2',
+      parameters: {
+        method: 'did:webvh:0.5',
+        updateKeys: [k2],
+        nextKeyHashes: [deriveKeyHash(await multikeyOf(provider, 'k9'))],
+      },
+      versionTime: T3,
+    });
+    const result = await validateDidLog([genesis, entry2, changed]);
+    assert.equal(result.valid, false);
+    assert.ok(result.issues.some((i) => i.unsupported === true && /changes method/.test(i.message)));
   });
 });

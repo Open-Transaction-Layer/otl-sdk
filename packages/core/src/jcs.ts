@@ -72,9 +72,9 @@ function serialize(value: unknown, seen: Set<object>, path: string): string {
 
     case 'string':
       // ES2019 well-formed JSON.stringify matches RFC 8785 escaping: the short
-      // escapes for \b \t \n \f \r \" \\, \uXXXX for other C0 controls, lone
-      // surrogates escaped, and everything else emitted as literal UTF-8.
-      return JSON.stringify(value);
+      // escapes for \b \t \n \f \r \" \\, \uXXXX for other C0 controls, and
+      // everything else emitted as literal UTF-8.
+      return serializeString(value, path);
 
     case 'undefined':
       throw new CanonicalizationError(`JSON cannot represent undefined${at(path)}`);
@@ -114,8 +114,30 @@ function serialize(value: unknown, seen: Set<object>, path: string): string {
   }
 }
 
+/**
+ * RFC 8785 requires I-JSON input, which excludes lone surrogates. They have no
+ * UTF-8 encoding, so two implementations would hash them differently; refusing
+ * them is the only answer that cannot disagree with another implementation.
+ */
+function serializeString(value: string, path: string): string {
+  // In a `u` regular expression a valid pair is one code point, so only an
+  // unpaired surrogate matches.
+  if (/\p{Surrogate}/u.test(value)) {
+    throw new CanonicalizationError(`String contains a lone surrogate${at(path)}`);
+  }
+  return JSON.stringify(value);
+}
+
 function serializeArray(array: unknown[], seen: Set<object>, path: string): string {
-  const items = array.map((item, index) => serialize(item, seen, `${path}[${index}]`));
+  // An index loop, not map: map skips the holes of a sparse array, which would
+  // leave an empty slot and emit something that is not JSON at all.
+  const items: string[] = [];
+  for (let index = 0; index < array.length; index++) {
+    if (!Object.hasOwn(array, index)) {
+      throw new CanonicalizationError(`JSON cannot represent an array hole at ${path}[${index}]`);
+    }
+    items.push(serialize(array[index], seen, `${path}[${index}]`));
+  }
   return `[${items.join(',')}]`;
 }
 
@@ -130,7 +152,8 @@ function serializeObject(object: Record<string, unknown>, seen: Set<object>, pat
     // Matching JSON.stringify: a property whose value is undefined or a
     // function is omitted rather than being an error.
     if (child === undefined || typeof child === 'function' || typeof child === 'symbol') continue;
-    members.push(`${JSON.stringify(key)}:${serialize(child, seen, path !== '' ? `${path}.${key}` : key)}`);
+    const childPath = path !== '' ? `${path}.${key}` : key;
+    members.push(`${serializeString(key, childPath)}:${serialize(child, seen, childPath)}`);
   }
 
   return `{${members.join(',')}}`;

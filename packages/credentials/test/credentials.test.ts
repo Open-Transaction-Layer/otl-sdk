@@ -1259,6 +1259,24 @@ describe('validation chain - hostile credentials', () => {
     assert.match(result.issues.join('; '), /Unsupported statusPurpose/);
   });
 
+  it('rejects a revocation entry wider than one bit (spec 5.1)', async () => {
+    const result = await signRaw(
+      base({
+        credentialStatus: [
+          {
+            type: 'BitstringStatusListEntry',
+            statusPurpose: 'revocation',
+            statusListIndex: '12',
+            statusListCredential: STATUS_LIST_URL,
+            statusSize: 2,
+          },
+        ],
+      }),
+    );
+    assert.equal(result.valid, false);
+    assert.match(result.issues.join('; '), /Unsupported statusSize/);
+  });
+
   it('rejects a credential with no issuer', async () => {
     const result = await signRaw(base({ issuer: '' }));
     assert.equal(result.valid, false);
