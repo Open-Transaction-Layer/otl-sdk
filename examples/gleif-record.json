@@ -1,0 +1,44 @@
+{
+  "_comment": "A synthetic GLEIF Level 1 record for the walkthrough. The LEI is all zeros with valid ISO 17442 check digits, so it passes validation while being unmistakably not a real registration. Shape matches the live GLEIF API so the same mapping code is exercised.",
+  "data": {
+    "type": "lei-records",
+    "id": "00000000000000000098",
+    "attributes": {
+      "lei": "00000000000000000098",
+      "entity": {
+        "legalName": { "name": "Example Participant GmbH", "language": "de" },
+        "otherNames": [],
+        "legalAddress": {
+          "language": "de",
+          "addressLines": ["Beispielstrasse 1"],
+          "city": "Frankfurt am Main",
+          "region": "DE-HE",
+          "country": "DE",
+          "postalCode": "60311"
+        },
+        "headquartersAddress": {
+          "language": "de",
+          "addressLines": ["Beispielstrasse 1"],
+          "city": "Frankfurt am Main",
+          "region": "DE-HE",
+          "country": "DE",
+          "postalCode": "60311"
+        },
+        "registeredAt": { "id": "RA000563", "other": null },
+        "registeredAs": "HRB 12345",
+        "jurisdiction": "DE",
+        "category": "GENERAL",
+        "legalForm": { "id": "XTIQ", "other": null },
+        "status": "ACTIVE"
+      },
+      "registration": {
+        "initialRegistrationDate": "2012-06-06T00:00:00Z",
+        "lastUpdateDate": "2026-01-01T00:00:00Z",
+        "status": "ISSUED",
+        "nextRenewalDate": "2027-01-01T00:00:00Z",
+        "managingLou": "00000000000000000195",
+        "corroborationLevel": "FULLY_CORROBORATED"
+      }
+    }
+  }
+}

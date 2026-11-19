@@ -1,0 +1,47 @@
+name: Bug report
+description: Something behaves differently from what the documentation or the specification says.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report this.
+
+        **Please do not use this form for a security problem.** A defect that makes a verifier accept something it should reject is a vulnerability, and filing it publicly gives attackers the details before a fix exists, so follow [SECURITY.md](https://github.com/Open-Transaction-Layer/otl-sdk/security/policy) and report it privately. A defect that makes a verifier reject something valid, or fail closed, is an ordinary bug and belongs here.
+  - type: checkboxes
+    id: not-a-vulnerability
+    attributes:
+      label: This is not a security vulnerability
+      options:
+        - label: I have checked that this does not let anything invalid be accepted as valid.
+          required: true
+  - type: input
+    id: package
+    attributes:
+      label: Package and version
+      description: The package that misbehaves and the version you installed.
+      placeholder: "@otl/core 0.1.0"
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: Describe what you saw and what you expected to see instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: How to reproduce it
+      description: A minimal script or a sequence of CLI commands that shows the problem, which we can run as written.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Node.js version and operating system
+      placeholder: Node.js 24 on macOS
+    validations:
+      required: true

@@ -1,0 +1,53 @@
+{
+  "name": "@otl/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "NON-PRODUCTION command line tool for the OTL Identity layer.",
+  "bin": {
+    "otl": "./dist/bin.js"
+  },
+  "exports": {
+    ".": {
+      "otl-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@otl/core": "0.1.0",
+    "@otl/credentials": "0.1.0",
+    "@otl/jwe": "0.1.0",
+    "@otl/keys": "0.1.0",
+    "@otl/keys-dev": "0.1.0",
+    "@otl/resolver": "0.1.0"
+  },
+  "otl": {
+    "productionReady": false
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "dist"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Open-Transaction-Layer/otl-sdk.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/Open-Transaction-Layer/otl-sdk/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/Open-Transaction-Layer/otl-sdk/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "sideEffects": false
+}

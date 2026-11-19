@@ -1,0 +1,54 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    # A freshly published version is the most likely to be a compromised one, so
+    # Dependabot waits a week before proposing it and security updates ignore
+    # the delay.
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: build
+      include: scope
+    groups:
+      # eslint and @eslint/js declare each other as peers at the same major, so
+      # a bump of one without the other cannot install and fails CI on its own.
+      eslint:
+        patterns: ["eslint", "@eslint/*"]
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # typescript-eslint caps its typescript peer below 6.1, so a TypeScript
+      # major bump cannot resolve until typescript-eslint supports it. Remove
+      # this once it does.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+
+  # The workflows pin every action by commit SHA with the release as a trailing
+  # comment, and Dependabot keeps both in step when it bumps one.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+    groups:
+      actions-minor-and-patch:
+        update-types: [minor, patch]
+
+  # The workflow analysis job installs zizmor from a requirements file that
+  # pins the version and the hash of every release file, and Dependabot keeps
+  # both in step when it bumps the version.
+  - package-ecosystem: pip
+    directory: /.github/zizmor
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
