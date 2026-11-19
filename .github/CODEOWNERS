@@ -1,0 +1,11 @@
+*                       @Open-Transaction-Layer/maintainers
+/.github/               @Open-Transaction-Layer/maintainers
+/scripts/               @Open-Transaction-Layer/maintainers
+/.changeset/config.json @Open-Transaction-Layer/maintainers
+/.npmrc                 @Open-Transaction-Layer/maintainers
+/package.json           @Open-Transaction-Layer/maintainers
+/package-lock.json      @Open-Transaction-Layer/maintainers
+/packages/*/package.json @Open-Transaction-Layer/maintainers
+/SECURITY.md            @Open-Transaction-Layer/maintainers
+/LICENSE                @Open-Transaction-Layer/maintainers
+/NOTICE                 @Open-Transaction-Layer/maintainers

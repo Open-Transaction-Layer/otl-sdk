@@ -1,0 +1,22 @@
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Vendored files are redistributed byte for byte, so an editor must not
+# normalise them. Some of the did:webvh fixtures genuinely have no final newline
+# and so does the W3C context, so an editor that added one would turn a
+# byte-identical copy into a modified one.
+[packages/core/test/vectors/**]
+insert_final_newline = false
+trim_trailing_whitespace = false
+
+[packages/core/test/contexts/credentials-v2.jsonld]
+insert_final_newline = false
+trim_trailing_whitespace = false

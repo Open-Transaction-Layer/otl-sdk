@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: check (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22.12 is the declared engines floor, 24 is the current Active LTS.
+        node: ['22.12', '24']
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      # Dependency lifecycle scripts never run in CI, so a compromised
+      # package cannot execute code at install time.
+      - run: npm ci --ignore-scripts
+      # build first: it typechecks every source file as it emits, and it
+      # produces the declarations the root typecheck resolves workspace
+      # imports through.
+      - run: npm run build
+      - run: npm run typecheck
+      # Type-aware lint. It resolves workspace imports through the `otl-source`
+      # condition in tsconfig.base.json, so it reads the TypeScript sources
+      # directly. no-floating-promises is the rule that matters most here: a
+      # dropped `await` on a verification call fails open.
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+
+  package:
+    name: packaging
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      # Dependency lifecycle scripts never run in CI, so a compromised
+      # package cannot execute code at install time.
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      # Packing is the only way to catch an exports map that points at a file
+      # the tarball does not contain, which no amount of in-repo testing sees.
+      - name: Pack and inspect every package
+        run: |
+          mkdir -p /tmp/packs
+          for p in packages/*/; do (cd "$p" && npm pack --pack-destination /tmp/packs); done
+          failed=0
+          for t in /tmp/packs/*.tgz; do
+            echo "::group::$(basename "$t")"
+            tar -tzf "$t"
+            for required in package/LICENSE package/NOTICE package/README.md; do
+              tar -tzf "$t" | grep -qx "$required" || { echo "::error::$(basename "$t") is missing $required"; failed=1; }
+            done
+            if tar -tzf "$t" | grep -q 'tsbuildinfo'; then
+              echo "::error::$(basename "$t") ships build metadata"; failed=1
+            fi
+            echo "::endgroup::"
+          done
+          exit $failed
+
+  audit:
+    name: audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      # Dependency lifecycle scripts never run in CI, so a compromised
+      # package cannot execute code at install time.
+      - run: npm ci --ignore-scripts
+      # Production dependencies only, because those are the ones users install.
+      # The dev tooling chain (@changesets/*, tinyglobby, fdir) currently fails
+      # on picomatch ReDoS GHSA-fc5q-39xc-vjpf, which affects every release up to
+      # the latest 4.0.7, so no upgrade can clear it. Dependabot alerts and the
+      # dependency-review job still cover dev dependencies. Drop --omit=dev once
+      # a patched picomatch is published.
+      - run: npm audit --omit=dev --audit-level=high
+      # Verifies the registry signature and provenance attestation of every
+      # installed package, which catches a tarball swapped after publication.
+      - run: npm audit signatures

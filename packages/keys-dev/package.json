@@ -1,0 +1,53 @@
+{
+  "name": "@otl/keys-dev",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "NON-PRODUCTION key providers for the OTL Identity layer: file-backed and in-memory. Never use these to hold a key that protects anything real.",
+  "keywords": [
+    "otl",
+    "did",
+    "keys",
+    "development",
+    "non-production"
+  ],
+  "license": "Apache-2.0",
+  "exports": {
+    ".": {
+      "otl-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@otl/keys": "0.1.0"
+  },
+  "otl": {
+    "productionReady": false,
+    "note": "FileKeyProvider and InMemoryKeyProvider hold raw private key material. Production deployments MUST bridge KeyProvider to a KMS or HSM instead."
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "dist"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Open-Transaction-Layer/otl-sdk.git",
+    "directory": "packages/keys-dev"
+  },
+  "homepage": "https://github.com/Open-Transaction-Layer/otl-sdk/tree/main/packages/keys-dev#readme",
+  "bugs": {
+    "url": "https://github.com/Open-Transaction-Layer/otl-sdk/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "sideEffects": false
+}

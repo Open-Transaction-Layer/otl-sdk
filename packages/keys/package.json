@@ -1,0 +1,51 @@
+{
+  "name": "@otl/keys",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Abstract key-provider contract for the OTL Identity layer, with a conformance kit for validating KMS and HSM bridges.",
+  "exports": {
+    ".": {
+      "otl-source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "otl-source": "./src/node.ts",
+      "types": "./dist/node.d.ts",
+      "default": "./dist/node.js"
+    },
+    "./conformance": {
+      "otl-source": "./src/conformance/index.ts",
+      "types": "./dist/conformance/index.d.ts",
+      "default": "./dist/conformance/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {},
+  "devDependencies": {},
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "LICENSE",
+    "NOTICE",
+    "README.md",
+    "dist"
+  ],
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Open-Transaction-Layer/otl-sdk.git",
+    "directory": "packages/keys"
+  },
+  "homepage": "https://github.com/Open-Transaction-Layer/otl-sdk/tree/main/packages/keys#readme",
+  "bugs": {
+    "url": "https://github.com/Open-Transaction-Layer/otl-sdk/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "sideEffects": false
+}

@@ -1,0 +1,15 @@
+node_modules/
+*.tsbuildinfo
+.otl/
+*.key
+*.pem
+.env
+.env.*
+!.env.example
+.DS_Store
+COMMIT_MSG.txt
+dist/
+.claude/
+packages/*/.tsbuildinfo
+packages/*/LICENSE
+packages/*/NOTICE
