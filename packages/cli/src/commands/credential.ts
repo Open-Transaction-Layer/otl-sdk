@@ -22,6 +22,7 @@ import {
 import { optionalOption, requireOption, type ParsedArgs } from '../args.ts';
 import { CliError } from '../errors.ts';
 import type { Output } from '../output.ts';
+import { chooseKey } from '../relationship-keys.ts';
 import type { DidMeta, Store } from '../store.ts';
 
 /**
@@ -84,14 +85,17 @@ async function publishStatusList(
   meta: DidMeta,
   listId: string,
   bitstring: Bitstring,
+  requestedKey?: string,
 ): Promise<StatusListCredential> {
-  const fragment = requireIssuanceKey(meta);
+  // Spec 5.2: a status list is signed by a key under the issuer's
+  // assertionMethod, as credentials are.
+  const { fragment, keyLabel } = await issuanceKey(store, meta, requestedKey);
   const credential = await buildStatusListCredential({
     issuer: meta.did,
     statusListCredentialUrl: statusListUrlFor(meta, listId),
     bitstring,
     provider: store.keyProvider(meta.scid),
-    keyLabel: meta.keyLabels[fragment] ?? fragment,
+    keyLabel,
     verificationMethod: `${meta.did}#${fragment}`,
     validFrom: new Date().toISOString(),
     validUntil: new Date(Date.now() + STATUS_LIST_LIFETIME_MS).toISOString(),
@@ -101,16 +105,20 @@ async function publishStatusList(
   return credential;
 }
 
-/** The fragment of this DID's credential signing key, or a CliError if it has none. */
-function requireIssuanceKey(meta: DidMeta): string {
-  const fragment = meta.issuanceKeyFragment ?? ISSUANCE_FRAGMENT;
-  if (meta.keyLabels[fragment] === undefined) {
-    throw new CliError(`${meta.did} has no credential signing key`, {
-      hint: 'Add one first: otl credential add-issuance-key',
-    });
-  }
-  return fragment;
-}
+/**
+ * The credential signing key to use (spec 3.2.1, 3.3).
+ *
+ * Chosen from the keys the current document references under
+ * `assertionMethod`, never by name: `--key` picks one explicitly, otherwise the
+ * key `credential add-issuance-key` added most recently is used, so that after
+ * adding a new key during a rotation, issuance moves to it.
+ */
+const issuanceKey = (store: Store, meta: DidMeta, requested?: string) =>
+  chooseKey(store, meta, 'assertionMethod', {
+    ...(requested !== undefined ? { requested } : {}),
+    ...(meta.issuanceKeyFragment !== undefined ? { preferred: meta.issuanceKeyFragment } : {}),
+    hint: 'Add one first: otl credential add-issuance-key',
+  });
 
 /**
  * Add a credential signing key under `assertionMethod` (spec 3.2.1).
@@ -158,6 +166,7 @@ async function issueAndRecord(
   subject: string,
   out: Output,
   mint: (credentialStatus: BitstringStatusListEntry) => Promise<VerifiableCredential>,
+  requestedKey?: string,
 ): Promise<void> {
   const bitstring = loadStatusList(store, meta, listId);
   const issued = readIssued(store, meta);
@@ -172,7 +181,7 @@ async function issueAndRecord(
   const index = allocateIndex(bitstring, (candidate) => taken.has(candidate));
 
   const credential = await mint(statusEntryFor(statusListUrlFor(meta, listId), index));
-  const statusList = await publishStatusList(store, meta, listId, bitstring);
+  const statusList = await publishStatusList(store, meta, listId, bitstring, requestedKey);
 
   // The issuance index stays private, deliberately. It maps credential ids to
   // status-list positions and subjects, which is exactly the correlation the
@@ -197,7 +206,8 @@ async function issueAndRecord(
 /** Issue an OtlLeiCredential (spec 4.8-4.10). */
 export async function cmdIssue(args: ParsedArgs, store: Store, out: Output): Promise<void> {
   const meta = store.resolveMeta(optionalOption(args, 'did'));
-  const fragment = requireIssuanceKey(meta);
+  const requestedKey = optionalOption(args, 'key');
+  const { fragment, keyLabel } = await issuanceKey(store, meta, requestedKey);
 
   const lei = requireOption(args, 'lei', 'The 20-character ISO 17442 code');
   const gleifFile = optionalOption(args, 'gleif-file');
@@ -228,13 +238,14 @@ export async function cmdIssue(args: ParsedArgs, store: Store, out: Output): Pro
       issuer: meta.did,
       subject,
       provider: store.keyProvider(meta.scid),
-      keyLabel: meta.keyLabels[fragment] ?? fragment,
+      keyLabel,
       verificationMethod: `${meta.did}#${fragment}`,
       // Omitted deliberately when absent: OtlLeiCredentialType defaults it to
       // the registration's own nextRenewalDate (spec 4.8).
       ...(validUntil !== undefined ? { validUntil } : {}),
       credentialStatus: [credentialStatus],
     }),
+    requestedKey,
   );
 }
 
@@ -249,7 +260,8 @@ export async function cmdIssue(args: ParsedArgs, store: Store, out: Output): Pro
  */
 export async function cmdIssueHosting(args: ParsedArgs, store: Store, out: Output): Promise<void> {
   const meta = store.resolveMeta(optionalOption(args, 'did'));
-  const fragment = requireIssuanceKey(meta);
+  const requestedKey = optionalOption(args, 'key');
+  const { fragment, keyLabel } = await issuanceKey(store, meta, requestedKey);
 
   const subject = requireOption(args, 'subject', 'The hosted did:webvh');
   // Spec 4.14 requires it: a provider that has done 4.12's due diligence
@@ -275,12 +287,13 @@ export async function cmdIssueHosting(args: ParsedArgs, store: Store, out: Outpu
       issuer: meta.did,
       subject,
       provider: store.keyProvider(meta.scid),
-      keyLabel: meta.keyLabels[fragment] ?? fragment,
+      keyLabel,
       verificationMethod: `${meta.did}#${fragment}`,
       // Spec 4.13 does not require validUntil for this type; honoured if given.
       ...(validUntil !== undefined ? { validUntil } : {}),
       credentialStatus: [credentialStatus],
     }),
+    requestedKey,
   );
 }
 
@@ -327,7 +340,8 @@ export async function cmdStatusList(args: ParsedArgs, store: Store, out: Output)
  */
 export async function cmdRefreshStatus(args: ParsedArgs, store: Store, out: Output): Promise<void> {
   const meta = store.resolveMeta(optionalOption(args, 'did'));
-  requireIssuanceKey(meta);
+  const requestedKey = optionalOption(args, 'key');
+  await issuanceKey(store, meta, requestedKey); // fail before touching anything
   const listId = listIdOption(args);
 
   if (!existsSync(statusListPath(store, meta, listId))) {
@@ -336,7 +350,13 @@ export async function cmdRefreshStatus(args: ParsedArgs, store: Store, out: Outp
     });
   }
 
-  const statusList = await publishStatusList(store, meta, listId, loadStatusList(store, meta, listId));
+  const statusList = await publishStatusList(
+    store,
+    meta,
+    listId,
+    loadStatusList(store, meta, listId),
+    requestedKey,
+  );
   if (out.json) {
     out.data(statusList);
   } else {
@@ -348,7 +368,8 @@ export async function cmdRefreshStatus(args: ParsedArgs, store: Store, out: Outp
 /** Revoke a credential by setting its bit and republishing (spec 5). */
 export async function cmdRevoke(args: ParsedArgs, store: Store, out: Output): Promise<void> {
   const meta = store.resolveMeta(optionalOption(args, 'did'));
-  requireIssuanceKey(meta);
+  const requestedKey = optionalOption(args, 'key');
+  await issuanceKey(store, meta, requestedKey); // fail before touching anything
 
   const credentialId = requireOption(args, 'credential', 'The credential id, e.g. urn:uuid:...');
   const issued = readIssued(store, meta);
@@ -363,7 +384,7 @@ export async function cmdRevoke(args: ParsedArgs, store: Store, out: Output): Pr
   const bitstring = loadStatusList(store, meta, record.listId);
   const alreadyRevoked = bitstring.get(record.index);
   bitstring.set(record.index, true); // idempotent by construction
-  const statusList = await publishStatusList(store, meta, record.listId, bitstring);
+  const statusList = await publishStatusList(store, meta, record.listId, bitstring, requestedKey);
 
   if (out.json) {
     out.data({ credentialId, index: record.index, alreadyRevoked, statusList });

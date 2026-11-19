@@ -20,7 +20,7 @@ import type { KeyProvider } from '@otl/keys';
 import { toPublicKeyMultibase } from '@otl/keys';
 import { InvalidDocumentError } from '../errors.ts';
 import { createProof } from '../proof.ts';
-import { buildDidDocument, type DocumentKey } from './document.ts';
+import { assertAssertionMethodExclusive, buildDidDocument, type DocumentKey } from './document.ts';
 import { deriveEntryHash, deriveKeyHash, deriveScid, formatVersionId, fromPlaceholders } from './hashing.ts';
 import { DIDWEBVH_1_0_PROFILE, explainCurveRejection, type MethodProfile } from './profile.ts';
 import { SCID_PLACEHOLDER, type DidLogEntry, type DidLogParameters, type ServiceEntry } from './types.ts';
@@ -117,6 +117,8 @@ export async function createDid(options: CreateDidOptions): Promise<CreatedDid> 
     portable,
     profile = DIDWEBVH_1_0_PROFILE,
   } = options;
+
+  assertAssertionMethodExclusive(keys);
 
   const managementKey = await provider.getKey(managementKeyLabel);
   const preRotationKey = await provider.getKey(preRotationKeyLabel);

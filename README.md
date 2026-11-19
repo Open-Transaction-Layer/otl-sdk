@@ -134,11 +134,6 @@ ourselves:
 
 The ones that affect use:
 
-- **The presentation signing key is provisional.** §6.3 requires the key that
-  signs a presentation to be listed in the holder's `authentication`, and the
-  resolver refuses any other key, but the choice of key is left to another
-  layer. `whois publish` signs with `#assertion-key` by default, which
-  `did create` lists under `authentication`, and says so.
 - **The encryption envelope is provisional.** §3.1.1 defines key-agreement key
   types but no envelope, so two conformant implementations cannot interoperate.
   We implement JWE Compact with ECDH-ES + A256GCM. Note it is confidential but

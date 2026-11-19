@@ -38,7 +38,7 @@ import {
 } from '@otl/keys';
 import { InvalidDocumentError } from '../errors.ts';
 import { createProof } from '../proof.ts';
-import { buildDidDocument, type DocumentKey } from './document.ts';
+import { assertAssertionMethodExclusive, buildDidDocument, type DocumentKey } from './document.ts';
 import { deriveEntryHash, deriveKeyHash, formatVersionId, parseVersionId } from './hashing.ts';
 import { DIDWEBVH_1_0_PROFILE, explainCurveRejection, type MethodProfile } from './profile.ts';
 import type { DidDocument, DidLogEntry, DidLogParameters, ServiceEntry } from './types.ts';
@@ -203,6 +203,7 @@ export async function addKey(
 ): Promise<DidLogEntry> {
   const { did, keys, ...rest } = options;
   assertSameDid(did, options.previousEntry);
+  assertAssertionMethodExclusive(keys);
   const existing = documentKeysOf(options.previousEntry.state);
   const state = buildDidDocument({
     did,

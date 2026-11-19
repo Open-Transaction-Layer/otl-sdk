@@ -22,6 +22,9 @@ import type { DidMeta, Store } from '../store.ts';
 
 const MANAGEMENT_LABEL = (n: number) => `did-management-${n}`;
 
+/** Fragment `did create` gives the signing key it creates. A local default, not a protocol name. */
+const AUTHENTICATION_FRAGMENT = 'authentication-key';
+
 /** Parse a `--curve` option. Ed25519 is the default (spec 3.1.1 permits both). */
 function parseCurve(value: string | undefined, fallback: Curve = 'Ed25519'): Curve {
   if (value === undefined) return fallback;
@@ -36,8 +39,8 @@ export async function didCreate(args: ParsedArgs, store: Store, out: Output): Pr
   const domain = requireOption(args, 'domain', 'For example: --domain vasp.example.com');
   const versionTime = optionalOption(args, 'time') ?? new Date().toISOString();
 
-  const assertionCurve = parseCurve(optionalOption(args, 'curve'));
-  if (assertionCurve === 'X25519') {
+  const signingCurve = parseCurve(optionalOption(args, 'curve'));
+  if (signingCurve === 'X25519') {
     throw new CliError('X25519 is a key-agreement curve and cannot sign', {
       hint: 'did create makes a signing key, so use --curve ed25519 or --curve p256.',
     });
@@ -62,10 +65,15 @@ export async function didCreate(args: ParsedArgs, store: Store, out: Output): Pr
   const management = await provider.generateKey(MANAGEMENT_LABEL(0), 'Ed25519');
   const next = await preRotation.generateKey(MANAGEMENT_LABEL(1), 'Ed25519');
 
+  // The general-purpose signing key: it signs presentations (spec 6.3) and
+  // whatever other layers define, so it goes under `authentication` only. A
+  // credential signing key is separate and exclusive (spec 3.2.1) and is added
+  // with `credential add-issuance-key`. The fragment is this tool's choice and
+  // carries no meaning (spec 3.3).
   const documentKeys = [];
-  if (!flag(args, 'no-assertion-key')) {
-    const assertion = await provider.generateKey('assertion-key', assertionCurve);
-    documentKeys.push(keyFromKeyInfo('assertion-key', assertion, ['assertionMethod', 'authentication']));
+  if (!flag(args, 'no-authentication-key')) {
+    const authentication = await provider.generateKey(AUTHENTICATION_FRAGMENT, signingCurve);
+    documentKeys.push(keyFromKeyInfo(AUTHENTICATION_FRAGMENT, authentication, ['authentication']));
   }
 
   const created = await createDid({
@@ -196,7 +204,10 @@ export async function didAddKey(args: ParsedArgs, store: Store, out: Output): Pr
   out.json ? out.data(entry.state) : out.success(`Added #${label} — now at version ${entry.versionId}`);
 }
 
-const defaultPurposeFor = (curve: Curve): string => (curve === 'X25519' ? 'keyAgreement' : 'assertionMethod');
+// A signing key defaults to `authentication`, not `assertionMethod`: a key
+// under `assertionMethod` may sign nothing but credentials (spec 3.2.1), so it
+// is added deliberately with `credential add-issuance-key`.
+const defaultPurposeFor = (curve: Curve): string => (curve === 'X25519' ? 'keyAgreement' : 'authentication');
 
 export async function didAddService(args: ParsedArgs, store: Store, out: Output): Promise<void> {
   const meta = store.resolveMeta(optionalOption(args, 'did'));

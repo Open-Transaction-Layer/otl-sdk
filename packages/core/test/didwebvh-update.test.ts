@@ -5,7 +5,7 @@ import { InMemoryKeyProvider } from '@otl/keys-dev';
 import { InvalidDocumentError } from '../src/errors.ts';
 import { verifyProof } from '../src/proof.ts';
 import { createDid } from '../src/didwebvh/create.ts';
-import { keyFromKeyInfo } from '../src/didwebvh/document.ts';
+import { buildDidDocument, keyFromKeyInfo } from '../src/didwebvh/document.ts';
 import { deriveEntryHash, deriveKeyHash, parseVersionId } from '../src/didwebvh/hashing.ts';
 import {
   addKey,
@@ -289,6 +289,55 @@ describe('log evolution - addKey', () => {
     );
   });
 
+  it('refuses a new key listed under assertionMethod and another relationship (spec 3.2.1)', async () => {
+    const { provider, created } = await genesis();
+    const both = await provider.generateKey('both', 'Ed25519');
+
+    await assert.rejects(
+      addKey({
+        did: created.did,
+        previousEntry: created.entry,
+        provider,
+        signingKeyLabel: 'k1',
+        nextKeyLabel: 'k2',
+        versionTime: T2,
+        keys: [keyFromKeyInfo('both', both, ['assertionMethod', 'authentication'])],
+      }),
+      (error: unknown) =>
+        error instanceof InvalidDocumentError && /exclusively for credentials/.test(error.message),
+    );
+  });
+
+  it('still updates a document that lists a key under assertionMethod and authentication', async () => {
+    // Published before the 3.2.1 check existed: the rule applies to keys being
+    // added, so the document can still be repaired by later entries.
+    const { provider, created } = await genesis();
+    const legacy = await provider.generateKey('legacy', 'Ed25519');
+    const entry2 = await appendEntry({
+      previousEntry: created.entry,
+      provider,
+      signingKeyLabel: 'k1',
+      nextKeyLabel: 'k2',
+      versionTime: T2,
+      state: buildDidDocument({
+        did: created.did,
+        keys: [keyFromKeyInfo('legacy', legacy, ['assertionMethod', 'authentication'])],
+      }),
+    });
+
+    const added = await provider.generateKey('added', 'Ed25519');
+    const entry3 = await addKey({
+      did: created.did,
+      previousEntry: entry2,
+      provider,
+      signingKeyLabel: 'k2',
+      nextKeyLabel: 'k3',
+      versionTime: '2026-03-01T00:00:00Z',
+      keys: [keyFromKeyInfo('added', added, ['authentication'])],
+    });
+    assert.deepEqual(entry3.state.authentication, [`${created.did}#legacy`, `${created.did}#added`]);
+  });
+
   it('round-trips document keys through publish and rebuild', async () => {
     // documentKeysOf must recover both multibase and JWK encoded keys, or an
     // update would silently drop them from the next version.
@@ -305,8 +354,8 @@ describe('log evolution - addKey', () => {
       preRotationKeyLabel: 'k1',
       versionTime: T1,
       keys: [
-        keyFromKeyInfo('ed-key', ed, ['assertionMethod', 'authentication']),
-        keyFromKeyInfo('p256-key', p256, ['assertionMethod']),
+        keyFromKeyInfo('ed-key', ed, ['assertionMethod']),
+        keyFromKeyInfo('p256-key', p256, ['authentication', 'keyAgreement']),
         keyFromKeyInfo('x-key', x, ['keyAgreement']),
       ],
     });
@@ -315,8 +364,8 @@ describe('log evolution - addKey', () => {
     assert.deepEqual(
       recovered.map((k) => [k.fragment, k.publicKey.curve, [...k.purposes].sort()]),
       [
-        ['ed-key', 'Ed25519', ['assertionMethod', 'authentication']],
-        ['p256-key', 'P-256', ['assertionMethod']],
+        ['ed-key', 'Ed25519', ['assertionMethod']],
+        ['p256-key', 'P-256', ['authentication', 'keyAgreement']],
         ['x-key', 'X25519', ['keyAgreement']],
       ],
     );

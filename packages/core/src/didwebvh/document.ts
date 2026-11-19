@@ -109,6 +109,27 @@ export function buildDidDocument(options: BuildDocumentOptions): DidDocument {
   return document as unknown as DidDocument;
 }
 
+/**
+ * Spec 3.2.1: every key under `assertionMethod` can sign credentials, so such a
+ * key is used exclusively for credentials and status lists and is referenced
+ * from no other relationship.
+ *
+ * Applied to keys being introduced, not to a whole rebuilt document: a
+ * document published before this rule must stay updatable, or the only way to
+ * repair it would be locked.
+ */
+export function assertAssertionMethodExclusive(keys: readonly DocumentKey[]): void {
+  for (const key of keys) {
+    if (key.purposes.includes('assertionMethod') && key.purposes.length > 1) {
+      throw new InvalidDocumentError(
+        `Key "#${key.fragment}" is listed under assertionMethod and also under ` +
+          `${key.purposes.filter((p) => p !== 'assertionMethod').join(', ')}. A credential signing key ` +
+          `is used exclusively for credentials (spec 3.2.1); use a separate key for the other purpose.`,
+      );
+    }
+  }
+}
+
 function assertUniqueFragments(keys: readonly DocumentKey[]): void {
   const seen = new Set<string>();
   for (const key of keys) {

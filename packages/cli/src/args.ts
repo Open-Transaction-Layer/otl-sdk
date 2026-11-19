@@ -23,7 +23,7 @@ export const BOOLEAN_FLAGS: ReadonlySet<string> = new Set([
   'yes',
   'allow-empty',
   'allow-private-addresses',
-  'no-assertion-key',
+  'no-authentication-key',
 ]);
 
 export function parseArgs(argv: readonly string[]): ParsedArgs {
