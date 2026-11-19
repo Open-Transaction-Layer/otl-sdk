@@ -33,6 +33,7 @@ import {
   ResolutionError,
   resolveDid,
   resolveAssertionKey,
+  resolveRelationshipKeys,
   resolveVerificationKey,
   statusListUrl,
   validateDid,
@@ -345,7 +346,7 @@ async function publishParticipant(domain = 'lou.example.org') {
     versionTime: '2026-01-01T00:00:00Z',
     keys: [
       keyFromKeyInfo('credential-issuance-key', issuance, ['assertionMethod']),
-      keyFromKeyInfo('assertion-key', assertion, ['assertionMethod', 'authentication']),
+      keyFromKeyInfo('assertion-key', assertion, ['assertionMethod']),
       keyFromKeyInfo('auth-only-key', authOnly, ['authentication']),
     ],
   });
@@ -429,6 +430,25 @@ describe('resolution', () => {
       () => resolveVerificationKey(created.did, '#credential-issuance-key', { fetch: serveMap(tampered) }),
       /failed validation/,
     );
+  });
+
+  it('returns every key a relationship lists, in document order (spec 3.3)', async () => {
+    // A relationship may hold several keys, e.g. during a rotation; which one
+    // to use is the caller's choice, so all of them are returned.
+    const { created, routes, issuance, assertion } = await publishParticipant();
+    const keys = await resolveRelationshipKeys(created.did, 'assertionMethod', { fetch: serveMap(routes) });
+    assert.deepEqual(
+      keys.map((k) => k.id),
+      [`${created.did}#credential-issuance-key`, `${created.did}#assertion-key`],
+    );
+    const hex = (bytes: Uint8Array) => Buffer.from(bytes).toString('hex');
+    assert.deepEqual(
+      keys.map((k) => hex(k.publicKey.bytes)),
+      [hex(issuance.publicKey.bytes), hex(assertion.publicKey.bytes)],
+    );
+
+    const none = await resolveRelationshipKeys(created.did, 'keyAgreement', { fetch: serveMap(routes) });
+    assert.deepEqual(none, []);
   });
 
   it('refuses to resolve a key for an unknown fragment', async () => {
@@ -681,11 +701,7 @@ describe('whois and the full chain (spec 4.4, 5.3)', () => {
       // Spec 6.3: the key that signs the presentation must be listed under
       // the holder's authentication.
       keys: [
-        keyFromKeyInfo(
-          'assertion-key',
-          vaspAssertion,
-          options.holderKeyPurposes ?? ['assertionMethod', 'authentication'],
-        ),
+        keyFromKeyInfo('presentation-key', vaspAssertion, options.holderKeyPurposes ?? ['authentication']),
       ],
     });
 
@@ -764,7 +780,7 @@ describe('whois and the full chain (spec 4.4, 5.3)', () => {
       },
       provider: vasp,
       keyLabel: 'assertion',
-      verificationMethod: `${vaspDid.did}#assertion-key`,
+      verificationMethod: `${vaspDid.did}#presentation-key`,
       proofPurpose: options.presentationProofPurpose ?? 'authentication',
     })) as unknown as VerifiablePresentation;
 

@@ -77,9 +77,10 @@ const HELP = `otl — OTL Identity layer tool (NON-PRODUCTION)
 
 DID
   did create --domain <d> [--curve ed25519|p256]
-             [--no-assertion-key] [--time <iso>]
+             [--no-authentication-key] [--time <iso>]
   did list | did show [--version <n>] | did validate
   did add-key --label <l> [--curve <c>] [--purpose <p>]
+                                   purpose defaults to authentication (keyAgreement for x25519)
   did add-service (--file <p> | --service <json>)
   did rotate                       rotate the management key, changing nothing else
   did deactivate --yes             permanent
@@ -92,18 +93,18 @@ Counterparties
 Credentials (issuer)
   credential add-issuance-key [--label <fragment>]
   credential issue --lei <code> --subject <did> [--list-id <id>] [--valid-until <iso>]
-                                   [--gleif-file <path>]
+                                   [--gleif-file <path>] [--key <fragment>]
   credential issue-hosting --subject <did> --common-name <name> [--watchers <url,url>]
-                                   [--list-id <id>] [--valid-until <iso>]
+                                   [--list-id <id>] [--valid-until <iso>] [--key <fragment>]
   credential status-list [--list-id <id>]
-  credential revoke --credential <id>
-  credential refresh-status [--list-id <id>]
+  credential revoke --credential <id> [--key <fragment>]
+  credential refresh-status [--list-id <id>] [--key <fragment>]
                                    re-sign a status list before it expires (1 hour)
 
 Credentials (subject)
   credential add --file <path>     store a credential issued to you
   credential held                  list what you hold
-  whois publish [--vp-key <label>] [--allow-empty]
+  whois publish [--vp-key <fragment>] [--allow-empty]
                                    sign and publish them (spec 4.4)
 
 Trust perimeter (spec 6.1 — nothing is trusted by default)
@@ -115,7 +116,7 @@ Cryptography
   sign --key <label> (--message <m> | --file <p>)
   verify --did <did> --key <label> --signature <s> (--message <m> | --file <p>)
                                    [--relationship assertionMethod|authentication]
-  encrypt --did <did> --key <label> (--message <m> | --file <p>) [--sender <text>]
+  encrypt --did <did> [--key <fragment>] (--message <m> | --file <p>) [--sender <text>]
   decrypt --key <label> (--jwe <jwe> | --file <p>)
 
 Publication

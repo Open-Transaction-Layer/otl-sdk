@@ -4,7 +4,8 @@
 
 import { signRaw, verifyRaw } from '@otl/core';
 import { decrypt, encrypt } from '@otl/jwe';
-import { resolveVerificationKey } from '@otl/resolver';
+import type { PublicKey } from '@otl/keys';
+import { resolveRelationshipKeys, resolveVerificationKey } from '@otl/resolver';
 import { optionalOption, requireOption, type ParsedArgs } from '../args.ts';
 import { CliError } from '../errors.ts';
 import type { Output } from '../output.ts';
@@ -24,7 +25,7 @@ const readMessage = async (args: ParsedArgs, option = 'message'): Promise<Uint8A
 
 export async function cmdSign(args: ParsedArgs, store: Store, out: Output): Promise<void> {
   const meta = store.resolveMeta(optionalOption(args, 'did'));
-  const keyLabel = requireOption(args, 'key', 'The key label, e.g. --key assertion-key');
+  const keyLabel = requireOption(args, 'key', 'The key label, e.g. --key authentication-key');
   const message = await readMessage(args);
 
   const signature = await signRaw({ message, provider: store.keyProvider(meta.scid), keyLabel });
@@ -63,22 +64,42 @@ export async function cmdVerify(args: ParsedArgs, _store: Store, out: Output): P
   if (!verified) throw new CliError('Signature did not verify', { exitCode: 2 });
 }
 
+/** Key-agreement curves the envelope supports (spec 3.1.1). */
+const SUPPORTED_AGREEMENT_CURVES: ReadonlySet<string> = new Set(['X25519', 'P-256']);
+
 export async function cmdEncrypt(args: ParsedArgs, _store: Store, out: Output): Promise<void> {
   const did = requireOption(args, 'did', 'The recipient DID');
-  const keyLabel = requireOption(args, 'key', 'The recipient keyAgreement key fragment');
+  const requested = optionalOption(args, 'key');
   const message = await readMessage(args);
 
-  // Only a key the recipient designated for key agreement may receive.
-  const recipientPublicKey = await resolveVerificationKey(did, keyLabel, {
-    ...fetchOptionsFrom(args),
-    relationship: 'keyAgreement',
-  });
+  // Only a key the recipient designated for key agreement may receive
+  // (spec 3.3). Without --key, any keyAgreement key of a type this tool
+  // supports will do: the recipient decides which keys it offers.
+  let recipientPublicKey: PublicKey;
+  let recipientKeyId: string;
+  if (requested !== undefined) {
+    recipientKeyId = requested.startsWith('did:') ? requested : `${did}#${requested.replace(/^#/, '')}`;
+    recipientPublicKey = await resolveVerificationKey(did, recipientKeyId, {
+      ...fetchOptionsFrom(args),
+      relationship: 'keyAgreement',
+    });
+  } else {
+    const candidates = await resolveRelationshipKeys(did, 'keyAgreement', fetchOptionsFrom(args));
+    const chosen = candidates.find((k) => SUPPORTED_AGREEMENT_CURVES.has(k.publicKey.curve));
+    if (chosen === undefined) {
+      throw new CliError(`${did} lists no keyAgreement key of a supported type`, {
+        hint: 'Supported: X25519 and P-256 (spec 3.1.1).',
+      });
+    }
+    recipientKeyId = chosen.id;
+    recipientPublicKey = chosen.publicKey;
+  }
 
   const sender = optionalOption(args, 'sender');
   const jwe = encrypt({
     plaintext: message,
     recipientPublicKey,
-    recipientKeyId: `${did}#${keyLabel.replace(/^#/, '')}`,
+    recipientKeyId,
     ...(sender !== undefined && sender !== '' ? { senderInfo: sender } : {}),
   });
 

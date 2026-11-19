@@ -29,18 +29,6 @@ export interface VerifiablePresentation extends Document {
   readonly verifiableCredential: readonly unknown[];
 }
 
-/**
- * Fragment of the key that signs the presentation's own proof.
- *
- * **Provisional.** Spec 6.3 requires the key on a VP to be under the holder's
- * DID and listed in the holder's `authentication`, so the verifier refuses any
- * key that is not referenced there. Which key a holder uses for presentations
- * is left to whichever other layer defines the holder's general-purpose signing
- * key, so this default fragment is a convention of this SDK and can be
- * overridden per call.
- */
-export const PROVISIONAL_VP_KEY_FRAGMENT = '#assertion-key';
-
 /** Fetch a participant's presentation, preferring their advertised `#whois`. */
 export async function fetchWhois(
   did: string,
@@ -101,8 +89,6 @@ export interface VerifyWhoisOptions {
    * memory (`resolveAssertionKey({ didHeadMemory })`) to cover them too.
    */
   readonly didHeadMemory?: DidHeadMemory;
-  /** Override the provisional VP key fragment. */
-  readonly vpKeyFragment?: string;
   readonly fetchOptions?: FetchOptions;
 }
 
@@ -120,7 +106,6 @@ export async function verifyWhois(options: VerifyWhoisOptions): Promise<WhoisVer
     trustPerimeter,
     resolveAssertionKey,
     fetchStatusList,
-    vpKeyFragment = PROVISIONAL_VP_KEY_FRAGMENT,
     fetchOptions = {},
   } = options;
 
@@ -142,17 +127,25 @@ export async function verifyWhois(options: VerifyWhoisOptions): Promise<WhoisVer
   let presentationVerified = false;
   let presentationIssue: string | undefined;
 
+  // Spec 3.3: the key is the one the proof names, and what makes it
+  // acceptable is the holder's `authentication` relationship referencing it,
+  // never its fragment. Which of several authentication keys signed is the
+  // holder's choice.
+  const vpKeyReference = proofVerificationMethod(presentation);
   if (presentation['proof'] === undefined) {
     presentationIssue = 'Presentation carries no proof';
+  } else if (vpKeyReference === undefined) {
+    presentationIssue = 'Presentation proof names no verificationMethod (spec 6.3)';
   } else {
     try {
-      const holderKey = await resolveVerificationKey(did, vpKeyFragment, {
+      const holderKey = await resolveVerificationKey(did, vpKeyReference, {
         ...resolveOptions,
         relationship: 'authentication',
       });
       const result = await verifyProof({
         document: presentation,
         publicKey: holderKey,
+        verificationMethod: vpKeyReference,
         // Spec 6.3: a presentation proof is an authentication proof, and a
         // verifier MUST reject any other purpose.
         expectedProofPurpose: 'authentication',
@@ -215,3 +208,11 @@ export const fetchStatusList =
     bitstringFrom(list);
     return list;
   };
+
+/** The `verificationMethod` of a document's proof (spec 6.3). */
+function proofVerificationMethod(document: Document): string | undefined {
+  const proof = document['proof'];
+  const first: unknown = Array.isArray(proof) ? (proof[0] as unknown) : proof;
+  const reference = (first as { verificationMethod?: unknown } | undefined)?.verificationMethod;
+  return typeof reference === 'string' && reference.length > 0 ? reference : undefined;
+}

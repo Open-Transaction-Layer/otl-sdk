@@ -102,9 +102,9 @@ describe('CLI - argument parsing', () => {
   });
 
   it('still lets a value-taking option consume its value', () => {
-    const parsed = parseArgs(['did', 'create', '--domain', 'example.com', '--no-assertion-key']);
+    const parsed = parseArgs(['did', 'create', '--domain', 'example.com', '--no-authentication-key']);
     assert.equal(parsed.options['domain'], 'example.com');
-    assert.equal(parsed.options['no-assertion-key'], true);
+    assert.equal(parsed.options['no-authentication-key'], true);
     assert.deepEqual(parsed.positional, []);
   });
 });
@@ -125,6 +125,18 @@ describe('CLI - did create', () => {
     assert.match(created.did, /^did:webvh:[1-9A-HJ-NP-Za-km-z]{46}:vasp\.example\.com$/);
     assert.ok(existsSync(join(created.exportDir, '.well-known', 'did.jsonl')));
     assert.ok(existsSync(join(created.exportDir, '.well-known', 'did.json')));
+  });
+
+  it('lists its signing key under authentication only (spec 3.2.1)', async () => {
+    // A key under assertionMethod may sign nothing but credentials, so the
+    // general-purpose key that signs presentations must not be listed there.
+    const home = freshHome();
+    await otl(home, 'did', 'create', '--domain', 'vasp.example.com', '--json');
+    const document = json<{ id: string; authentication?: string[]; assertionMethod?: string[] }>(
+      await otl(home, 'did', 'show', '--json'),
+    );
+    assert.deepEqual(document.authentication, [`${document.id}#authentication-key`]);
+    assert.equal(document.assertionMethod, undefined);
   });
 
   it('warns that keys are non-production', async () => {
@@ -317,7 +329,7 @@ describe('CLI - a failed update can be retried', () => {
   it('refuses to add a key whose fragment the document already has', async () => {
     const home = freshHome();
     await otl(home, 'did', 'create', '--domain', 'vasp.example.com', '--json');
-    const result = await otl(home, 'did', 'add-key', '--label', 'assertion-key');
+    const result = await otl(home, 'did', 'add-key', '--label', 'authentication-key');
     assert.equal(result.code, 1);
     assert.match(result.stderr, /already has a verification method/);
   });
@@ -406,6 +418,43 @@ describe('CLI - credentials', () => {
       credential: { proof: { verificationMethod: string } };
     };
     assert.match(credential.proof.verificationMethod, /#my-own-key$/);
+  });
+
+  it('chooses the issuance key from assertionMethod, newest first (spec 3.2.1, 3.3)', async () => {
+    const home = freshHome();
+    await otl(home, 'did', 'create', '--domain', 'lou.example.org', '--json');
+    await otl(home, 'credential', 'add-issuance-key', '--label', 'vc-key-1');
+    // A rotation: the new key is added while the old one stays listed.
+    await otl(home, 'credential', 'add-issuance-key', '--label', 'vc-key-2');
+
+    const issue = (...extra: string[]) =>
+      otl(
+        home,
+        'credential',
+        'issue-hosting',
+        '--subject',
+        'did:webvh:QmTestScidForHostedParticipant0001:vasp.example.com',
+        '--common-name',
+        'Example VASP',
+        '--json',
+        ...extra,
+      );
+    const signedBy = (stdout: string) =>
+      (JSON.parse(stdout) as { credential: { proof: { verificationMethod: string } } }).credential.proof
+        .verificationMethod;
+
+    const newest = await issue();
+    assert.equal(newest.code, 0, newest.stderr);
+    assert.match(signedBy(newest.stdout), /#vc-key-2$/);
+
+    const older = await issue('--key', 'vc-key-1');
+    assert.equal(older.code, 0, older.stderr);
+    assert.match(signedBy(older.stdout), /#vc-key-1$/);
+
+    // The general-purpose key is under authentication, so it may not sign credentials.
+    const refused = await issue('--key', 'authentication-key');
+    assert.equal(refused.code, 1);
+    assert.match(refused.stderr, /not listed under assertionMethod/);
   });
 
   it('adds an issuance key and reports no status list yet', async () => {
@@ -565,6 +614,22 @@ describe('CLI - whois publish', () => {
       fetchOptions: { fetch },
     });
     assert.equal(result.presentationVerified, true, result.presentationIssue ?? 'presentation not verified');
+  });
+
+  it('refuses a --vp-key that is not listed under authentication (spec 6.3)', async () => {
+    const home = freshHome();
+    await otl(home, 'did', 'create', '--domain', 'vasp.example.com', '--json');
+    await otl(home, 'credential', 'add-issuance-key');
+    const result = await otl(
+      home,
+      'whois',
+      'publish',
+      '--allow-empty',
+      '--vp-key',
+      'credential-issuance-key',
+    );
+    assert.equal(result.code, 1);
+    assert.match(result.stderr, /not listed under authentication/);
   });
 });
 
