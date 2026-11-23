@@ -100,14 +100,7 @@ export interface VerifyWhoisOptions {
  * That is what lets a deployed verifier keep working as new types appear.
  */
 export async function verifyWhois(options: VerifyWhoisOptions): Promise<WhoisVerificationResult> {
-  const {
-    did,
-    registry,
-    trustPerimeter,
-    resolveAssertionKey,
-    fetchStatusList,
-    fetchOptions = {},
-  } = options;
+  const { did, registry, trustPerimeter, resolveAssertionKey, fetchStatusList, fetchOptions = {} } = options;
 
   const resolveOptions: DidValidationOptions = {
     ...fetchOptions,

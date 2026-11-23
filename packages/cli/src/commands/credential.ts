@@ -215,36 +215,42 @@ export async function cmdIssue(args: ParsedArgs, store: Store, out: Output): Pro
   const listId = listIdOption(args);
   const validUntil = optionalOption(args, 'valid-until');
 
-  await issueAndRecord(store, meta, listId, subject, out, (credentialStatus) =>
-    issueCredential({
-      type: new OtlLeiCredentialType(),
-      input: {
-        lei,
-        // A local Level 1 record instead of the live GLEIF API. For tests,
-        // demos and air-gapped issuance. The record is validated against spec
-        // 4.9 either way, so this bypasses the lookup, not the checks.
-        ...(gleifFile !== undefined && gleifFile !== ''
-          ? {
-              gleif: {
-                fetch: async () => ({
-                  ok: true,
-                  status: 200,
-                  json: async () => JSON.parse(readFileSync(gleifFile, 'utf8')) as unknown,
-                }),
-              },
-            }
-          : {}),
-      },
-      issuer: meta.did,
-      subject,
-      provider: store.keyProvider(meta.scid),
-      keyLabel,
-      verificationMethod: `${meta.did}#${fragment}`,
-      // Omitted deliberately when absent: OtlLeiCredentialType defaults it to
-      // the registration's own nextRenewalDate (spec 4.8).
-      ...(validUntil !== undefined ? { validUntil } : {}),
-      credentialStatus: [credentialStatus],
-    }),
+  await issueAndRecord(
+    store,
+    meta,
+    listId,
+    subject,
+    out,
+    (credentialStatus) =>
+      issueCredential({
+        type: new OtlLeiCredentialType(),
+        input: {
+          lei,
+          // A local Level 1 record instead of the live GLEIF API. For tests,
+          // demos and air-gapped issuance. The record is validated against spec
+          // 4.9 either way, so this bypasses the lookup, not the checks.
+          ...(gleifFile !== undefined && gleifFile !== ''
+            ? {
+                gleif: {
+                  fetch: async () => ({
+                    ok: true,
+                    status: 200,
+                    json: async () => JSON.parse(readFileSync(gleifFile, 'utf8')) as unknown,
+                  }),
+                },
+              }
+            : {}),
+        },
+        issuer: meta.did,
+        subject,
+        provider: store.keyProvider(meta.scid),
+        keyLabel,
+        verificationMethod: `${meta.did}#${fragment}`,
+        // Omitted deliberately when absent: OtlLeiCredentialType defaults it to
+        // the registration's own nextRenewalDate (spec 4.8).
+        ...(validUntil !== undefined ? { validUntil } : {}),
+        credentialStatus: [credentialStatus],
+      }),
     requestedKey,
   );
 }
@@ -280,19 +286,25 @@ export async function cmdIssueHosting(args: ParsedArgs, store: Store, out: Outpu
     .map((w) => w.trim())
     .filter((w) => w.length > 0);
 
-  await issueAndRecord(store, meta, listId, subject, out, (credentialStatus) =>
-    issueCredential({
-      type: new OtlHostingCredentialType(),
-      input: { commonName, ...(watchers === undefined ? {} : { watchers }) },
-      issuer: meta.did,
-      subject,
-      provider: store.keyProvider(meta.scid),
-      keyLabel,
-      verificationMethod: `${meta.did}#${fragment}`,
-      // Spec 4.13 does not require validUntil for this type; honoured if given.
-      ...(validUntil !== undefined ? { validUntil } : {}),
-      credentialStatus: [credentialStatus],
-    }),
+  await issueAndRecord(
+    store,
+    meta,
+    listId,
+    subject,
+    out,
+    (credentialStatus) =>
+      issueCredential({
+        type: new OtlHostingCredentialType(),
+        input: { commonName, ...(watchers === undefined ? {} : { watchers }) },
+        issuer: meta.did,
+        subject,
+        provider: store.keyProvider(meta.scid),
+        keyLabel,
+        verificationMethod: `${meta.did}#${fragment}`,
+        // Spec 4.13 does not require validUntil for this type; honoured if given.
+        ...(validUntil !== undefined ? { validUntil } : {}),
+        credentialStatus: [credentialStatus],
+      }),
     requestedKey,
   );
 }
