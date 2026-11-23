@@ -44,6 +44,8 @@ export interface CredentialVerificationResult {
  * is referenced under the issuer's `assertionMethod`; presence in
  * `verificationMethod` is not authority to issue.
  */
+const STATUS_LIST_TYPE = 'BitstringStatusListCredential';
+
 export type ResolveAssertionKey = (issuerDid: string, verificationMethod: string) => Promise<PublicKey>;
 
 /** Fetch and parse a status list credential. Injected for the same reason. */
@@ -154,6 +156,12 @@ export async function verifyCredential(
   // ---- Step 2: structural and binding checks (spec 5.3) -----------------
   if (!Array.isArray(vc.type) || vc.type[0] !== 'VerifiableCredential') {
     issues.push('type array must begin with "VerifiableCredential" (spec 4.3)');
+  }
+  // Credentials and status lists are signed by the same assertionMethod keys,
+  // so the type is all that separates them. A document claiming to be both
+  // could carry a signature obtained for one into the other (threat T-REV-05).
+  if (Array.isArray(vc.type) && (vc.type as readonly unknown[]).includes(STATUS_LIST_TYPE)) {
+    issues.push(`A credential must not also be typed ${STATUS_LIST_TYPE} (spec 5.2)`);
   }
   if (issuer === subject && !type.allowsSelfIssuance) {
     issues.push(`${type.typeName} may not be self-issued (spec 4.3)`);
@@ -348,6 +356,22 @@ async function checkRevocation(
     if (list.id !== undefined && list.id !== entry.statusListCredential) {
       issues.push(
         `Status list declares id "${list.id}" but was fetched from ${entry.statusListCredential} (spec 5.2).`,
+      );
+      continue;
+    }
+
+    // Spec 5.2 fixes the type exactly. A list carrying any further type could be
+    // a credential signed as a status list, or the reverse (threat T-REV-05).
+    const listType: unknown = (list as { type?: unknown }).type;
+    if (
+      !Array.isArray(listType) ||
+      listType.length !== 2 ||
+      listType[0] !== 'VerifiableCredential' ||
+      listType[1] !== STATUS_LIST_TYPE
+    ) {
+      issues.push(
+        `Status list at ${entry.statusListCredential} must be typed exactly ` +
+          `["VerifiableCredential", "${STATUS_LIST_TYPE}"] (spec 5.2).`,
       );
       continue;
     }

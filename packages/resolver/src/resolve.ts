@@ -145,6 +145,58 @@ export async function resolveVerificationKey(
     readonly relationship?: VerificationRelationship;
   } = {},
 ): Promise<PublicKey> {
+  const document = await validatedDocument(did, options);
+  const wanted = referenceFor(did, fragmentOrReference);
+
+  if (options.relationship !== undefined) {
+    const references = relationshipReferences(document, options.relationship);
+    if (!references.includes(wanted)) {
+      throw new ResolutionError(
+        `DID "${did}" does not reference "${wanted}" under ${options.relationship} (spec 3.3). ` +
+          `A key must be designated for its purpose, not merely present in the document.`,
+      );
+    }
+  }
+
+  return publicKeyOf(document, did, wanted);
+}
+
+/** A key a relationship references, with its full reference. */
+export interface RelationshipKey {
+  readonly id: string;
+  readonly publicKey: PublicKey;
+}
+
+/**
+ * Every key the DID's current document references under `relationship`, after
+ * validating the log once (spec 3.3).
+ *
+ * A relationship may reference several keys, for example during a rotation or
+ * to offer keys of different types, and the caller chooses among them; the
+ * spec lets an encrypting party use any one whose type it supports. A
+ * reference that cannot be turned into a key is skipped rather than failing
+ * the others. References are returned in document order.
+ */
+export async function resolveRelationshipKeys(
+  did: string,
+  relationship: VerificationRelationship,
+  options: DidValidationOptions = {},
+): Promise<RelationshipKey[]> {
+  const document = await validatedDocument(did, options);
+  const keys: RelationshipKey[] = [];
+  for (const reference of relationshipReferences(document, relationship)) {
+    if (!reference.startsWith(`${did}#`)) continue;
+    try {
+      keys.push({ id: reference, publicKey: publicKeyOf(document, did, reference) });
+    } catch {
+      // Unusable entries are skipped; resolveVerificationKey reports why.
+    }
+  }
+  return keys;
+}
+
+/** Validate the log to genesis and return the current document. */
+async function validatedDocument(did: string, options: DidValidationOptions): Promise<DidDocument> {
   const validated = await validateDid(did, options);
 
   if (!validated.valid) {
@@ -156,21 +208,15 @@ export async function resolveVerificationKey(
   if (validated.deactivated) {
     throw new ResolutionError(`DID "${did}" has been deactivated`);
   }
-
-  const document = validated.document;
-  const wanted = referenceFor(did, fragmentOrReference);
-
-  if (options.relationship !== undefined && document !== undefined) {
-    const references = relationshipReferences(document, options.relationship);
-    if (!references.includes(wanted)) {
-      throw new ResolutionError(
-        `DID "${did}" does not reference "${wanted}" under ${options.relationship} (spec 3.2.1). ` +
-          `A key must be designated for its purpose, not merely present in the document.`,
-      );
-    }
+  if (validated.document === undefined) {
+    throw new ResolutionError(`DID log for "${did}" yielded no document`);
   }
+  return validated.document;
+}
 
-  const method = (document?.verificationMethod ?? []).find((m) => m.id === wanted);
+/** The public key of the verification method `wanted`, matched exactly. */
+function publicKeyOf(document: DidDocument, did: string, wanted: string): PublicKey {
+  const method = (document.verificationMethod ?? []).find((m) => m.id === wanted);
   if (!method) {
     throw new ResolutionError(`DID "${did}" has no verification method "${wanted}"`);
   }

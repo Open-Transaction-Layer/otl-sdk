@@ -302,20 +302,42 @@ describe('did:webvh - genesis document', () => {
     await provider.generateKey('m', 'Ed25519');
     await provider.generateKey('p', 'Ed25519');
     const signing = await provider.generateKey('sig', 'Ed25519');
+    const issuing = await provider.generateKey('vc', 'Ed25519');
     const created = await createDid({
       domain: DOMAIN,
       provider,
       managementKeyLabel: 'm',
       preRotationKeyLabel: 'p',
       versionTime: TIME,
-      keys: [keyFromKeyInfo('assertion-key', signing, ['assertionMethod', 'authentication'])],
+      keys: [
+        keyFromKeyInfo('authentication-key', signing, ['authentication']),
+        keyFromKeyInfo('vc-key', issuing, ['assertionMethod']),
+      ],
     });
 
     const [method] = created.entry.state.verificationMethod!;
-    assert.equal(method!.id, `${created.did}#assertion-key`);
+    assert.equal(method!.id, `${created.did}#authentication-key`);
     assert.equal(method!.controller, created.did);
-    assert.deepEqual(created.entry.state.assertionMethod, [`${created.did}#assertion-key`]);
-    assert.deepEqual(created.entry.state.authentication, [`${created.did}#assertion-key`]);
+    assert.deepEqual(created.entry.state.authentication, [`${created.did}#authentication-key`]);
+    assert.deepEqual(created.entry.state.assertionMethod, [`${created.did}#vc-key`]);
+  });
+
+  it('refuses a key listed under assertionMethod and another relationship (spec 3.2.1)', async () => {
+    const provider = new InMemoryKeyProvider();
+    await provider.generateKey('m', 'Ed25519');
+    await provider.generateKey('p', 'Ed25519');
+    const signing = await provider.generateKey('sig', 'Ed25519');
+    await assert.rejects(
+      createDid({
+        domain: DOMAIN,
+        provider,
+        managementKeyLabel: 'm',
+        preRotationKeyLabel: 'p',
+        versionTime: TIME,
+        keys: [keyFromKeyInfo('sig', signing, ['assertionMethod', 'authentication'])],
+      }),
+      /exclusively for credentials \(spec 3\.2\.1\)/,
+    );
   });
 
   it('keeps the DID Management Key out of verificationMethod', async () => {

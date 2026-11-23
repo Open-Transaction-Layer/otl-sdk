@@ -478,6 +478,24 @@ describe('validation chain (spec 5.3)', () => {
     assert.match(result.issues.join('; '), /Status list proof did not verify/);
   });
 
+  it('rejects a status list typed as anything more than a status list (spec 5.2)', async () => {
+    // Checked before the list's proof: a list carrying an extra type could be
+    // a credential signed as a status list, or the reverse (threat T-REV-05).
+    const { credential, setup, trustPerimeter } = await setupChain();
+    const result = await verifyCredential({
+      credential,
+      registry: defaultRegistry(),
+      trustPerimeter,
+      resolveAssertionKey: setup.resolveAssertionKey,
+      fetchStatusList: async () => ({
+        ...setup.statusList,
+        type: ['VerifiableCredential', 'BitstringStatusListCredential', OTL_LEI_CREDENTIAL],
+      }),
+    });
+    assert.equal(result.valid, false);
+    assert.match(result.issues.join('; '), /must be typed exactly/);
+  });
+
   it('rejects an unresolvable issuer', async () => {
     const { credential, trustPerimeter, setup } = await setupChain();
     const result = await verifyCredential({
@@ -1183,6 +1201,16 @@ describe('validation chain - hostile credentials', () => {
     const result = await signRaw(base({ type: [OTL_LEI_CREDENTIAL, 'VerifiableCredential'] }));
     assert.equal(result.valid, false);
     assert.match(result.issues.join('; '), /must begin with/);
+  });
+
+  it('rejects a credential also typed BitstringStatusListCredential (threat T-REV-05)', async () => {
+    // Credentials and status lists are signed by the same assertionMethod keys,
+    // so a document claiming to be both could carry one's signature as the other.
+    const result = await signRaw(
+      base({ type: ['VerifiableCredential', OTL_LEI_CREDENTIAL, 'BitstringStatusListCredential'] }),
+    );
+    assert.equal(result.valid, false);
+    assert.match(result.issues.join('; '), /must not also be typed BitstringStatusListCredential/);
   });
 
   it('rejects an OtlLeiCredential with no credentialStatus', async () => {

@@ -12,19 +12,8 @@ import { defaultRegistry } from '@otl/credentials';
 import { flag, optionalOption, requireOption, type ParsedArgs } from '../args.ts';
 import { CliError } from '../errors.ts';
 import type { Output } from '../output.ts';
+import { chooseKey } from '../relationship-keys.ts';
 import type { Store } from '../store.ts';
-
-/**
- * Fragment used to sign the presentation itself.
- *
- * **Provisional.** Spec 6.3 requires the key that signs a presentation to be
- * under the holder's DID and listed in the holder's `authentication`, and a
- * verifier refuses any other key. Which key the holder uses is left to
- * whichever other layer defines the holder's general-purpose signing key, so
- * this default is a convention of this tool. It is overridable with
- * `--vp-key`, and every publication says so on stderr.
- */
-const PROVISIONAL_VP_KEY = 'assertion-key';
 
 /** Store a credential issued to us by someone else. */
 export async function cmdCredentialAdd(args: ParsedArgs, store: Store, out: Output): Promise<void> {
@@ -90,7 +79,6 @@ export async function cmdCredentialHeld(args: ParsedArgs, store: Store, out: Out
  */
 export async function cmdWhoisPublish(args: ParsedArgs, store: Store, out: Output): Promise<void> {
   const meta = store.resolveMeta(optionalOption(args, 'did'));
-  const keyLabel = optionalOption(args, 'vp-key') ?? PROVISIONAL_VP_KEY;
   const credentials = store.heldCredentials(meta.scid);
 
   if (credentials.length === 0 && !flag(args, 'allow-empty')) {
@@ -99,12 +87,15 @@ export async function cmdWhoisPublish(args: ParsedArgs, store: Store, out: Outpu
     });
   }
 
-  const provider = store.keyProvider(meta.scid);
-  await provider.getKey(keyLabel).catch(() => {
-    throw new CliError(`No key "${keyLabel}" in this DID`, {
-      hint: `Add one with: otl did add-key --label ${keyLabel}`,
-    });
+  // Spec 6.3: a presentation is signed by a key the holder's `authentication`
+  // references. Which one is the holder's choice (spec 3.3): `--vp-key` picks
+  // one, otherwise the most recently added key this store holds.
+  const requested = optionalOption(args, 'vp-key');
+  const { fragment, keyLabel } = await chooseKey(store, meta, 'authentication', {
+    ...(requested !== undefined ? { requested } : {}),
+    hint: 'Add one with: otl did add-key --label <fragment>',
   });
+  const provider = store.keyProvider(meta.scid);
 
   const presentation = await createProof({
     document: {
@@ -115,20 +106,14 @@ export async function cmdWhoisPublish(args: ParsedArgs, store: Store, out: Outpu
     },
     provider,
     keyLabel,
-    verificationMethod: `${meta.did}#${keyLabel}`,
+    verificationMethod: `${meta.did}#${fragment}`,
     proofPurpose: 'authentication',
   });
 
   const path = store.writeExportArtifact(meta.scid, 'whois.vp', presentation);
 
-  out.warn(
-    'NOTE: the presentation signing key is PROVISIONAL. Spec 6.3 requires it to be listed in your\n' +
-      "  DID's authentication but leaves the choice of key to another layer.\n" +
-      `  Signed with #${keyLabel}; override with --vp-key.`,
-  );
-
   if (out.json) {
-    out.data({ holder: meta.did, credentials: credentials.length, path, vpKey: keyLabel });
+    out.data({ holder: meta.did, credentials: credentials.length, path, vpKey: fragment });
   } else {
     out.success(`Published a presentation with ${credentials.length} credential(s)`);
     out.print(`  ${path}`);
