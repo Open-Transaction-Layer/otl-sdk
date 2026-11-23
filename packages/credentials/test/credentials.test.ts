@@ -487,11 +487,10 @@ describe('validation chain (spec 5.3)', () => {
       registry: defaultRegistry(),
       trustPerimeter,
       resolveAssertionKey: setup.resolveAssertionKey,
-      fetchStatusList: async () =>
-        ({
-          ...setup.statusList,
-          type: ['VerifiableCredential', 'BitstringStatusListCredential', OTL_LEI_CREDENTIAL],
-        }) as unknown as typeof setup.statusList,
+      fetchStatusList: async () => ({
+        ...setup.statusList,
+        type: ['VerifiableCredential', 'BitstringStatusListCredential', OTL_LEI_CREDENTIAL],
+      }),
     });
     assert.equal(result.valid, false);
     assert.match(result.issues.join('; '), /must be typed exactly/);
