@@ -26,7 +26,7 @@ import {
   verifySignature,
   type KeyProvider,
   type PublicKey,
-} from '@otl/keys';
+} from '@open-transaction-layer/keys';
 import { assertCryptosuiteMatchesCurve, cryptosuiteForCurve, type CryptosuiteName } from './cryptosuite.ts';
 import { InvalidDocumentError, ProofError } from './errors.ts';
 import { canonicalizeToBytes } from './jcs.ts';

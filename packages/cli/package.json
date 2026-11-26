@@ -1,5 +1,5 @@
 {
-  "name": "@otl/cli",
+  "name": "@open-transaction-layer/cli",
   "version": "0.1.0",
   "type": "module",
   "description": "NON-PRODUCTION command line tool for the OTL Identity layer.",
@@ -17,12 +17,12 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "@otl/core": "0.1.0",
-    "@otl/credentials": "0.1.0",
-    "@otl/jwe": "0.1.0",
-    "@otl/keys": "0.1.0",
-    "@otl/keys-dev": "0.1.0",
-    "@otl/resolver": "0.1.0"
+    "@open-transaction-layer/core": "0.1.0",
+    "@open-transaction-layer/credentials": "0.1.0",
+    "@open-transaction-layer/jwe": "0.1.0",
+    "@open-transaction-layer/keys": "0.1.0",
+    "@open-transaction-layer/keys-dev": "0.1.0",
+    "@open-transaction-layer/resolver": "0.1.0"
   },
   "otl": {
     "productionReady": false

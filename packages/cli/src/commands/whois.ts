@@ -7,8 +7,8 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { createProof } from '@otl/core';
-import { defaultRegistry } from '@otl/credentials';
+import { createProof } from '@open-transaction-layer/core';
+import { defaultRegistry } from '@open-transaction-layer/credentials';
 import { flag, optionalOption, requireOption, type ParsedArgs } from '../args.ts';
 import { CliError } from '../errors.ts';
 import type { Output } from '../output.ts';

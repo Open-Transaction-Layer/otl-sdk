@@ -26,7 +26,7 @@
  * a choice about algorithm agility, not a workaround for a custody constraint.
  */
 
-import type { Curve } from '@otl/keys';
+import type { Curve } from '@open-transaction-layer/keys';
 import type { CryptosuiteName } from '../cryptosuite.ts';
 
 export interface MethodProfile {

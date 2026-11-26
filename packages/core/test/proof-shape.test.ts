@@ -15,7 +15,7 @@
 
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { Bitstring, buildStatusListCredential, createDid, createProof, addService } from '../src/index.ts';
 
 const DOMAIN = 'vasp.example.com';

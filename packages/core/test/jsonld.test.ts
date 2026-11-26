@@ -21,13 +21,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import jsonld from 'jsonld';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import {
   issueCredential,
   OtlHostingCredentialType,
   OtlLeiCredentialType,
   OTL_IDENTITY_CONTEXT,
-} from '@otl/credentials';
+} from '@open-transaction-layer/credentials';
 import { Bitstring, buildStatusListCredential, statusEntryFor, verifyProof } from '../src/index.ts';
 
 const HERE = import.meta.dirname;

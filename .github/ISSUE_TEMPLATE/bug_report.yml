@@ -20,7 +20,7 @@ body:
     attributes:
       label: Package and version
       description: The package that misbehaves and the version you installed.
-      placeholder: "@otl/core 0.1.0"
+      placeholder: "@open-transaction-layer/core 0.1.0"
     validations:
       required: true
   - type: textarea

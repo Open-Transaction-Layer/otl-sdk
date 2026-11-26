@@ -1,11 +1,11 @@
-# `@otl/resolver`
+# `@open-transaction-layer/resolver`
 
 `did:webvh` resolution over HTTPS, `whois` presentations and status-list
 fetching for the OTL Identity layer.
 
 This is the only package in the SDK that performs network I/O, which is why it
 is separate: a verifier doing offline verification against logs it already
-holds can depend on [`@otl/core`](../core) and never pull this in.
+holds can depend on [`@open-transaction-layer/core`](../core) and never pull this in.
 
 ## What it does
 

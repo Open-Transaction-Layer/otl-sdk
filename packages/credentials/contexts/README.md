@@ -41,7 +41,7 @@ To emit this context once the URL resolves, add `OTL_IDENTITY_CONTEXT` to
 and update the first group in `packages/core/test/jsonld.test.ts`, which is
 written to start failing on that day.
 
-The SDK bundles this file (`@otl/credentials/context`) so that verification
+The SDK bundles this file (`@open-transaction-layer/credentials/context`) so that verification
 never fetches it. Fetching it would make every verification of an OTL
 credential depend on OTL's server, and would disclose the verifier's IP address
 and timing for every counterparty check.

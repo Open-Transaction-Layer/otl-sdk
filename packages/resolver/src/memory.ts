@@ -25,7 +25,7 @@
  *    DID until it is seen again. It never causes a false failure.
  */
 
-import type { KnownDidHead } from '@otl/core';
+import type { KnownDidHead } from '@open-transaction-layer/core';
 
 export interface DidHeadMemory {
   /** Newest validated head for this SCID, if any. */

@@ -15,10 +15,10 @@ at that document.
 > rather than partially handled.
 
 > **Non-production.** File-backed private keys are a development affordance,
-> and they live in [`@otl/keys-dev`](packages/keys-dev/README.md) so that
+> and they live in [`@open-transaction-layer/keys-dev`](packages/keys-dev/README.md) so that
 > depending on the `KeyProvider` contract never places private key handling in
 > a production dependency tree. Production deployments bridge `KeyProvider` to
-> a KMS or HSM instead and validate that bridge with `@otl/keys/conformance`.
+> a KMS or HSM instead and validate that bridge with `@open-transaction-layer/keys/conformance`.
 > The CLI says so on every command that touches the local keystore, and the
 > warning is not suppressible.
 
@@ -54,26 +54,26 @@ No network access needed; the GLEIF record is supplied from a local fixture.
 
 | Package | Contents | Production |
 |---|---|---|
-| [`@otl/keys`](packages/keys/README.md) | The abstract `KeyProvider` contract, plus a conformance kit for validating a KMS or HSM bridge | yes |
-| [`@otl/keys-dev`](packages/keys-dev/README.md) | File-backed and in-memory providers that hold real private keys | **no** |
-| [`@otl/core`](packages/core/README.md) | JCS canonicalization, Data Integrity proofs, `did:webvh`, status lists | yes |
-| [`@otl/jwe`](packages/jwe/README.md) | JWE Compact encryption (ECDH-ES with A256GCM); the envelope is provisional and not sender-authenticated | yes |
-| [`@otl/credentials`](packages/credentials/README.md) | Pluggable credential-type registry, LEI/GLEIF, trust perimeter, the §5.3 validation chain, the JSON-LD context | yes |
-| [`@otl/resolver`](packages/resolver/README.md) | Guarded HTTPS retrieval, whois presentations, status-list fetching | yes |
-| [`@otl/cli`](packages/cli/README.md) | The `otl` command | **no** |
+| [`@open-transaction-layer/keys`](packages/keys/README.md) | The abstract `KeyProvider` contract, plus a conformance kit for validating a KMS or HSM bridge | yes |
+| [`@open-transaction-layer/keys-dev`](packages/keys-dev/README.md) | File-backed and in-memory providers that hold real private keys | **no** |
+| [`@open-transaction-layer/core`](packages/core/README.md) | JCS canonicalization, Data Integrity proofs, `did:webvh`, status lists | yes |
+| [`@open-transaction-layer/jwe`](packages/jwe/README.md) | JWE Compact encryption (ECDH-ES with A256GCM); the envelope is provisional and not sender-authenticated | yes |
+| [`@open-transaction-layer/credentials`](packages/credentials/README.md) | Pluggable credential-type registry, LEI/GLEIF, trust perimeter, the §5.3 validation chain, the JSON-LD context | yes |
+| [`@open-transaction-layer/resolver`](packages/resolver/README.md) | Guarded HTTPS retrieval, whois presentations, status-list fetching | yes |
+| [`@open-transaction-layer/cli`](packages/cli/README.md) | The `otl` command | **no** |
 
 Zero runtime dependencies anywhere, since everything is built on `node:crypto`.
 
 ## Installing
 
 ```bash
-npm install @otl/core @otl/credentials @otl/resolver @otl/keys
+npm install @open-transaction-layer/core @open-transaction-layer/credentials @open-transaction-layer/resolver @open-transaction-layer/keys
 ```
 
 Bridge `KeyProvider` to your own key management, and validate the bridge:
 
 ```ts
-import { runKeyProviderConformance } from '@otl/keys/conformance';
+import { runKeyProviderConformance } from '@open-transaction-layer/keys/conformance';
 runKeyProviderConformance('MyKmsProvider', () => new MyKmsProvider());
 ```
 
@@ -97,7 +97,7 @@ The build exists to produce what gets published. See
 
 ## Design decisions worth knowing
 
-**Key management is an interface, not an implementation.** `@otl/keys` ships an
+**Key management is an interface, not an implementation.** `@open-transaction-layer/keys` ships an
 abstract class and two development providers, and no KMS/HSM bridge at all.
 Generation, key agreement and private-key export are *optional* capability
 interfaces, because none of them is universal — Azure Key Vault has no
@@ -106,7 +106,7 @@ often sign-only. A conformance kit ships alongside so a bridge author can prove
 theirs is correct.
 
 **Bridges never canonicalize.** JCS, hashing and proof assembly stay in
-`@otl/core`, so two backends cannot drift on how a signature input is built.
+`@open-transaction-layer/core`, so two backends cannot drift on how a signature input is built.
 
 **`resolve` and `validate` are separate, and the boundary is load-bearing.**
 `resolve` fetches without validating and is for inspection only; nothing that
@@ -143,7 +143,7 @@ The ones that affect use:
   types but no envelope, so two conformant implementations cannot interoperate.
   We implement JWE Compact with ECDH-ES + A256GCM. Note it is confidential but
   **not sender-authenticated**.
-- **The JSON-LD context is not published at its URL.** `@otl/credentials`
+- **The JSON-LD context is not published at its URL.** `@open-transaction-layer/credentials`
   ships it and resolves it from disk, which is what makes expansion work, but
   `https://www.otl.network/contexts/identity/v1` does not resolve. A verifier that
   does not use the bundled loader will therefore drop every term the context

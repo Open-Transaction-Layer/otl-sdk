@@ -13,7 +13,7 @@
  */
 
 import { gunzipSync, gzipSync } from 'node:zlib';
-import { fromMultibaseBase64url, toMultibaseBase64url } from '@otl/keys';
+import { fromMultibaseBase64url, toMultibaseBase64url } from '@open-transaction-layer/keys';
 import { InvalidDocumentError } from '../errors.ts';
 
 /**

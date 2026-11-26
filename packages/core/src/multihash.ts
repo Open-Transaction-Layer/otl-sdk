@@ -11,7 +11,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { base58btcEncode } from '@otl/keys';
+import { base58btcEncode } from '@open-transaction-layer/keys';
 
 /** Multihash prefix for sha2-256: code 0x12, digest length 0x20. */
 const SHA2_256_MULTIHASH_PREFIX = Uint8Array.from([0x12, 0x20]);

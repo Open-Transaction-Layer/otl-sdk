@@ -2,15 +2,20 @@
  * The whois presentation (OTL spec 4.4) and status list retrieval (5.2).
  */
 
-import { bitstringFrom, verifyProof, type Document, type StatusListCredential } from '@otl/core';
+import {
+  bitstringFrom,
+  verifyProof,
+  type Document,
+  type StatusListCredential,
+} from '@open-transaction-layer/core';
 import {
   verifyCredential,
   type CredentialTypeRegistry,
   type CredentialVerificationResult,
   type StatusListMemory,
   type TrustPerimeter,
-} from '@otl/credentials';
-import type { PublicKey } from '@otl/keys';
+} from '@open-transaction-layer/credentials';
+import type { PublicKey } from '@open-transaction-layer/keys';
 import { fetchJson, type FetchOptions } from './http.ts';
 import type { DidHeadMemory } from './memory.ts';
 import {

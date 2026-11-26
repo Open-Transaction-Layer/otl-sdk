@@ -1,5 +1,5 @@
 /**
- * `@otl/resolver` — HTTPS retrieval for the OTL Identity layer.
+ * `@open-transaction-layer/resolver` — HTTPS retrieval for the OTL Identity layer.
  *
  * The only package here that performs I/O. Everything it fetches is named by a
  * counterparty and served from infrastructure they control, so the guards in

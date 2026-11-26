@@ -17,8 +17,8 @@ import {
   type DidDocument,
   type DidLogEntry,
   type ValidationResult,
-} from '@otl/core';
-import { fromPublicKeyJwk, fromPublicKeyMultibase, type PublicKey } from '@otl/keys';
+} from '@open-transaction-layer/core';
+import { fromPublicKeyJwk, fromPublicKeyMultibase, type PublicKey } from '@open-transaction-layer/keys';
 import { fetchJson, fetchText, type FetchOptions } from './http.ts';
 import type { DidHeadMemory } from './memory.ts';
 import { didDocumentUrl, didLogUrl, parseDid } from './url.ts';

@@ -6,7 +6,7 @@
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { runKeyProviderConformance } from '@otl/keys/conformance';
+import { runKeyProviderConformance } from '@open-transaction-layer/keys/conformance';
 import { FileKeyProvider } from '../src/file.ts';
 import { InMemoryKeyProvider } from '../src/in-memory.ts';
 

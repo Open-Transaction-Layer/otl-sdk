@@ -1,10 +1,10 @@
-# `@otl/keys`
+# `@open-transaction-layer/keys`
 
 The key-provider contract for the OTL Identity layer.
 
 This package ships **the abstraction and nothing that holds private key material**. It contains no AWS KMS, Azure Key Vault or HSM bridge, because those are written by whoever consumes this SDK against `KeyProvider` and validated with the conformance kit shipped alongside it.
 
-The development providers that do hold private keys, on disk or in memory, live in [`@otl/keys-dev`](../keys-dev) instead. They are a separate package so that depending on this contract never places file-backed key handling in a production dependency tree.
+The development providers that do hold private keys, on disk or in memory, live in [`@open-transaction-layer/keys-dev`](../keys-dev) instead. They are a separate package so that depending on this contract never places file-backed key handling in a production dependency tree.
 
 Zero runtime dependencies. Everything is built on `node:crypto`.
 
@@ -31,7 +31,7 @@ interface ExportsPrivateKeys   { exportPrivateKey(label): Promise<Uint8Array> } 
 Use the type guards rather than `instanceof` or duck-typing:
 
 ```ts
-import { supportsGeneration, supportsKeyAgreement } from '@otl/keys';
+import { supportsGeneration, supportsKeyAgreement } from '@open-transaction-layer/keys';
 
 if (!supportsKeyAgreement(provider)) {
   throw new Error(`Provider ${provider.id} cannot encrypt — no key-agreement primitive`);
@@ -89,7 +89,7 @@ Two consequences:
 If the SDK ships an abstraction and no real implementation, correctness lives in code we do not write. So we ship the suite that defines correct. Run it in your own CI:
 
 ```ts
-import { runKeyProviderConformance } from '@otl/keys/conformance';
+import { runKeyProviderConformance } from '@open-transaction-layer/keys/conformance';
 
 runKeyProviderConformance('our KMS bridge', () => new OurKmsKeyProvider(config));
 ```
@@ -100,7 +100,7 @@ The kit's own negative controls live in [`packages/keys-dev/test/conformance-neg
 
 ---
 
-## Development providers (in `@otl/keys-dev`) — both NON-PRODUCTION
+## Development providers (in `@open-transaction-layer/keys-dev`) — both NON-PRODUCTION
 
 | | Purpose | Storage |
 |---|---|---|
@@ -110,7 +110,7 @@ The kit's own negative controls live in [`packages/keys-dev/test/conformance-neg
 `FileKeyProvider` requires a passphrase and will not write an unencrypted private key. It is still a private key on a disk: appropriate for exercising the protocol end to end, not a custody solution.
 
 ```ts
-import { FileKeyProvider } from '@otl/keys-dev';
+import { FileKeyProvider } from '@open-transaction-layer/keys-dev';
 
 const provider = new FileKeyProvider({
   directory: `${process.env.HOME}/.otl/dids/<scid>/keys`,
@@ -131,4 +131,4 @@ Fixed here so two bridges can never disagree.
 | Signature (both curves) | 64 raw bytes |
 | `publicKeyMultibase` | multicodec prefix + multibase base58btc (`z…`); P-256 compressed to 33 bytes per Multikey |
 
-Bridges never canonicalize. JCS, hashing and proof assembly stay in `@otl/core` so that proof construction cannot drift between backends.
+Bridges never canonicalize. JCS, hashing and proof assembly stay in `@open-transaction-layer/core` so that proof construction cannot drift between backends.

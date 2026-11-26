@@ -12,7 +12,7 @@
  * do. Generation, key agreement and export are not universal — folding them
  * into the base would force every bridge to stub out methods it cannot honour.
  *
- * @see `@otl/keys/conformance` — the test kit a bridge should run in its own CI.
+ * @see `@open-transaction-layer/keys/conformance` — the test kit a bridge should run in its own CI.
  */
 
 import type { Curve, KeyInfo, ProviderCapabilities, PublicKey } from './types.ts';
@@ -80,7 +80,7 @@ export interface GeneratesKeys {
  *
  * Returns the raw shared secret Z. Key derivation (Concat KDF, RFC 7518 §4.6.2)
  * and the JWE envelope
- * live in `@otl/jwe`, not here, so that every backend produces the same
+ * live in `@open-transaction-layer/jwe`, not here, so that every backend produces the same
  * ciphertext for the same inputs.
  *
  * Not every backend has this: Azure Key Vault exposes no key-agreement
@@ -98,7 +98,7 @@ export interface DerivesSharedSecrets {
  * It exists so the file and in-memory providers can support development
  * workflows such as backing up a throwaway DID.
  *
- * Nothing in `@otl/core`, `@otl/credentials`, `@otl/resolver` or the CLI
+ * Nothing in `@open-transaction-layer/core`, `@open-transaction-layer/credentials`, `@open-transaction-layer/resolver` or the CLI
  * calls it, and a KMS or HSM bridge should never implement it.
  */
 export interface ExportsPrivateKeys {

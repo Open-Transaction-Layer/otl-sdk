@@ -21,7 +21,7 @@
  * the recipient — but it is **not authenticated**. Anyone who knows the
  * recipient's published keyAgreement key can produce a valid ciphertext.
  * Sender authentication requires a separate signature over the plaintext
- * (`signRaw` from `@otl/core`), which the caller must add if it is needed.
+ * (`signRaw` from `@open-transaction-layer/core`), which the caller must add if it is needed.
  */
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto';
@@ -31,8 +31,8 @@ import {
   fromPublicKeyJwk,
   type KeyProvider,
   type PublicKey,
-} from '@otl/keys';
-import { supportsKeyAgreement } from '@otl/keys';
+} from '@open-transaction-layer/keys';
+import { supportsKeyAgreement } from '@open-transaction-layer/keys';
 import { EncryptionError } from './errors.ts';
 
 /** Key-agreement algorithm. Direct derivation: no wrapped content key. */

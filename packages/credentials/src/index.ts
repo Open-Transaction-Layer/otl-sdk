@@ -1,5 +1,5 @@
 /**
- * `@otl/credentials` — verifiable credentials for the OTL Identity layer.
+ * `@open-transaction-layer/credentials` — verifiable credentials for the OTL Identity layer.
  *
  * LEI and hosting credentials are registered like any other credential type,
  * so adding a type means writing a `CredentialType` rather than touching the issuing or

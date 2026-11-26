@@ -1,9 +1,9 @@
 ---
-"@otl/core": minor
-"@otl/credentials": minor
-"@otl/resolver": minor
-"@otl/keys-dev": minor
-"@otl/cli": minor
+"@open-transaction-layer/core": minor
+"@open-transaction-layer/credentials": minor
+"@open-transaction-layer/resolver": minor
+"@open-transaction-layer/keys-dev": minor
+"@open-transaction-layer/cli": minor
 ---
 
 **Security:** DID log validation no longer lets an entry with an empty `updateKeys` list sidestep pre-rotation. Such an entry used to be authorized by the keys before it and was exempt from the commitment check, so whoever held only the current update key could empty the list and then append an entry naming keys of their own choosing. While pre-rotation is active an empty `updateKeys` list is now refused, no entry may follow one with an empty list, and an entry that omits `nextKeyHashes` keeps the earlier commitment in force rather than switching the check off. A later entry that changes `method` is refused as unsupported.

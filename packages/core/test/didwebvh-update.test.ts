@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { toPublicKeyMultibase } from '@otl/keys';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { toPublicKeyMultibase } from '@open-transaction-layer/keys';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { InvalidDocumentError } from '../src/errors.ts';
 import { verifyProof } from '../src/proof.ts';
 import { createDid } from '../src/didwebvh/create.ts';

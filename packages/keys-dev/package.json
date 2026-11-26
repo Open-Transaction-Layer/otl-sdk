@@ -1,5 +1,5 @@
 {
-  "name": "@otl/keys-dev",
+  "name": "@open-transaction-layer/keys-dev",
   "version": "0.1.0",
   "type": "module",
   "description": "NON-PRODUCTION key providers for the OTL Identity layer: file-backed and in-memory. Never use these to hold a key that protects anything real.",
@@ -22,7 +22,7 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "@otl/keys": "0.1.0"
+    "@open-transaction-layer/keys": "0.1.0"
   },
   "otl": {
     "productionReady": false,

@@ -20,7 +20,7 @@ import {
   verifySignature,
   type KeyProvider,
   type PublicKey,
-} from '@otl/keys';
+} from '@open-transaction-layer/keys';
 import { OtlCoreError } from './errors.ts';
 
 export class SigningError extends OtlCoreError {}

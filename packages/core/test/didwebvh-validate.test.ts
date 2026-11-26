@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { toPublicKeyMultibase } from '@otl/keys';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { toPublicKeyMultibase } from '@open-transaction-layer/keys';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { createDid } from '../src/didwebvh/create.ts';
 import { DIDWEBVH_1_0_PROFILE, OTL_EXTENDED_PROFILE } from '../src/didwebvh/profile.ts';
 import { addService, deactivate } from '../src/didwebvh/update.ts';

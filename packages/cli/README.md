@@ -1,9 +1,9 @@
-# `@otl/cli`
+# `@open-transaction-layer/cli`
 
 **Non-production** command line tool for the OTL Identity layer.
 
 > ⚠️ This CLI stores private keys on disk through
-> [`@otl/keys-dev`](../keys-dev). It prints that warning on every command that
+> [`@open-transaction-layer/keys-dev`](../keys-dev). It prints that warning on every command that
 > touches the local keystore, and the warning is not suppressible. Do not use it to hold a key that protects
 > anything real.
 
@@ -15,7 +15,7 @@ anything you can do here you can do by calling the SDK directly.
 ## Usage
 
 ```bash
-npx @otl/cli --help
+npx @open-transaction-layer/cli --help
 ```
 
 It covers creating and updating a DID, rotating and adding keys, publishing the
