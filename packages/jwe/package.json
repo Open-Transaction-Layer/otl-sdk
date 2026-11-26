@@ -1,6 +1,6 @@
 {
   "name": "@open-transaction-layer/jwe",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "JWE Compact Serialization (ECDH-ES with A256GCM) for the OTL Identity layer. The envelope is provisional and not sender-authenticated.",
   "exports": {
@@ -14,10 +14,10 @@
     "node": ">=22.12.0"
   },
   "dependencies": {
-    "@open-transaction-layer/keys": "0.1.0"
+    "@open-transaction-layer/keys": "0.2.0"
   },
   "devDependencies": {
-    "@open-transaction-layer/keys-dev": "0.1.0"
+    "@open-transaction-layer/keys-dev": "0.2.0"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
