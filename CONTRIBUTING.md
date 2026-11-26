@@ -24,6 +24,21 @@ The workspace runs straight off TypeScript with no build step, through a custom
 `otl-source` export condition, so `npm test` is fast and needs nothing compiled
 first. The build exists to produce what gets published.
 
+## Reporting a bug or suggesting an enhancement
+
+Bugs and enhancement requests are tracked as
+[GitHub issues](https://github.com/Open-Transaction-Layer/otl-sdk/issues/new/choose),
+and the issue forms ask for what you need to include. Please search the existing
+issues first, because your report may already be there and the public archive
+of issues and replies is searchable by anyone.
+
+A good bug report says which package and version you used, what you did, what
+you expected and what happened instead, and a short reproduction helps most.
+A defect that makes a verifier fail closed, for example by rejecting a valid
+document, is an ordinary bug and belongs in an issue. A defect that makes a
+verifier accept something it should reject is a security issue and must be
+reported privately instead, as described in [SECURITY.md](SECURITY.md).
+
 ## Where to make your change
 
 All changes reach `main` through a pull request, and nobody pushes to `main`
