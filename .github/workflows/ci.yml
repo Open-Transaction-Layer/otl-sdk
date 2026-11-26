@@ -79,6 +79,10 @@ jobs:
             echo "::endgroup::"
           done
           exit $failed
+      # Unpacks the tarballs the way an install would and imports every entry
+      # point under plain Node resolution, with no workspace-only conditions.
+      - name: Import every entry point from the packed tarballs
+        run: node scripts/check-package-exports.mjs /tmp/packs
 
   audit:
     name: audit
