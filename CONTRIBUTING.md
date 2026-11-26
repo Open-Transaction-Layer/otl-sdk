@@ -56,6 +56,11 @@ one. For anything touching verification, prefer a test written from the
 attacker's side: issuance-time checks are not a substitute, because an attacker
 does not use our issuer.
 
+Code that parses input an attacker controls also has seeded fuzz tests in
+`fuzz.test.ts` files. They run a fixed number of iterations by default, and
+`OTL_FUZZ_ITERATIONS=20000 npm test` runs more. A failure names its seed and
+iteration, so it reproduces exactly.
+
 The repository vendors the official `did:webvh` conformance corpus under
 `packages/core/test/vectors`. Those files are the ecosystem's definition of
 correct rather than ours, so do not edit them to make a test pass. Refresh them
