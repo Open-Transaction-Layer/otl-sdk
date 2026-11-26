@@ -187,8 +187,8 @@ The ones that affect use:
 ## Contributing and licence
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), the
-[code of conduct](CODE_OF_CONDUCT.md) and the
-[security policy](SECURITY.md).
+[code of conduct](CODE_OF_CONDUCT.md), the
+[security policy](SECURITY.md) and [SUPPORT.md](SUPPORT.md).
 
 The code in this repository is licensed under [Apache-2.0](LICENSE). See
 [NOTICE](NOTICE) for third-party attribution. The specification lives in its
