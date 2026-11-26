@@ -16,7 +16,7 @@ why.
 | Squash merges only | Merge commits and rebases are disabled | One reviewed unit per change |
 | Required checks | `check`, `packaging`, `audit`, `zizmor`, `CodeQL` and `dependency-review`, on an up-to-date branch | Nothing merges that fails build, tests, lint, vulnerability audit, workflow analysis or code scanning |
 | Tags | The `Protect tags` ruleset blocks moving and deleting tags | A published version cannot be silently repointed |
-| Actions | Only GitHub-owned actions and the OpenSSF Scorecard action are allowed, every action is pinned by SHA, read-only default token, no pull request approval by workflows | A compromised or retagged action cannot run, and a workflow cannot approve its own change |
+| Actions | Only GitHub-owned actions are allowed, every action is pinned by SHA, read-only default token, no pull request approval by workflows | A compromised or retagged action cannot run, and a workflow cannot approve its own change |
 | Fork pull requests | A maintainer approves workflow runs from every outside contributor | Untrusted code does not run on repository runners unreviewed |
 | Publishing | npm trusts only the `release` environment of this repository's release workflow, there is no npm token, and the environment requires approval from a maintainer | A merge to `main` alone can never publish and there is no long-lived credential to steal |
 | Secrets | Secret scanning and push protection | A committed credential is blocked or reported |
