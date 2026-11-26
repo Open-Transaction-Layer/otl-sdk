@@ -84,6 +84,22 @@ jobs:
       - name: Import every entry point from the packed tarballs
         run: node scripts/check-package-exports.mjs /tmp/packs
 
+  api-reference:
+    name: api reference
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # Builds the API reference with every documentation warning treated as an
+      # error, so a broken link or an unresolvable type fails the pull request.
+      - run: npm run docs
+
   audit:
     name: audit
     runs-on: ubuntu-latest
