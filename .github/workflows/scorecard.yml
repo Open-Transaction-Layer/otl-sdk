@@ -1,0 +1,47 @@
+name: Scorecard
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '23 5 * * 2'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scorecard-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The version and the checksum change together and only in a reviewed pull
+  # request. The checksum is that of the linux amd64 release file, so the job
+  # fails if the downloaded file is anything other than the reviewed one.
+  SCORECARD_VERSION: '5.6.0'
+  SCORECARD_SHA256: '19bde07129450cb65a95c6e3b9f34e034341579e6f0e241546ec3ae6efb2dd9a'
+
+jobs:
+  scorecard:
+    name: Scorecard
+    runs-on: ubuntu-latest
+    # Read-only and no third-party action. The command line tool runs from a
+    # release file that is verified against a pinned checksum, and it reads the
+    # repository through the API with the default read-only token. The result
+    # is printed in the job log and is not published anywhere.
+    permissions:
+      contents: read
+    steps:
+      - name: Download Scorecard
+        run: |
+          set -euo pipefail
+          file="scorecard_${SCORECARD_VERSION}_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
+            --output "$file" \
+            "https://github.com/ossf/scorecard/releases/download/v${SCORECARD_VERSION}/${file}"
+          echo "${SCORECARD_SHA256}  ${file}" | sha256sum --check --strict
+          tar --extract --gzip --file "$file" scorecard
+      - name: Run Scorecard
+        env:
+          GITHUB_AUTH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: ./scorecard --repo "github.com/${REPOSITORY}" --show-details
