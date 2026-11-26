@@ -18,7 +18,8 @@ anything you can do here you can do by calling the SDK directly.
 npx @open-transaction-layer/cli --help
 ```
 
-It covers creating and updating a DID, rotating and adding keys, publishing the
+The full [command reference](https://github.com/Open-Transaction-Layer/otl-sdk/blob/main/docs/cli.md)
+lists every command with its options, output and exit codes. It covers creating and updating a DID, rotating and adding keys, publishing the
 version log and status lists, issuing and revoking credentials, managing the
 trust perimeter, and resolving and validating an external DID.
 

@@ -3,7 +3,7 @@
  *
  * Intended for tests and throwaway runs. Key material lives in plain process
  * memory and is lost on exit. Production deployments MUST bridge
- * {@link KeyProvider} to a KMS or HSM instead.
+ * {@link "keys/src"!KeyProvider} to a KMS or HSM instead.
  */
 
 import type { KeyObject } from 'node:crypto';

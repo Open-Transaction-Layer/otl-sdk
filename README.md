@@ -64,6 +64,10 @@ No network access needed; the GLEIF record is supplied from a local fixture.
 
 Zero runtime dependencies anywhere, since everything is built on `node:crypto`.
 
+The [API reference](https://open-transaction-layer.github.io/otl-sdk/) is
+generated from the source on every merge to `main` and documents every exported
+function, class and type with its inputs, outputs and errors.
+
 ## Installing
 
 ```bash
