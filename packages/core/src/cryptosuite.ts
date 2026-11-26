@@ -6,7 +6,7 @@
  * talked into a weaker combination.
  */
 
-import type { Curve } from '@otl/keys';
+import type { Curve } from '@open-transaction-layer/keys';
 import { CryptosuiteMismatchError } from './errors.ts';
 
 export type CryptosuiteName = 'eddsa-jcs-2022' | 'ecdsa-jcs-2019';

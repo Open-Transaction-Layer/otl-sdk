@@ -9,10 +9,10 @@
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, sign as nodeSign, type KeyObject } from 'node:crypto';
 import { describe, it } from 'node:test';
-import { keyProviderConformanceCases } from '@otl/keys/conformance';
-import type { KeyProvider } from '@otl/keys';
+import { keyProviderConformanceCases } from '@open-transaction-layer/keys/conformance';
+import type { KeyProvider } from '@open-transaction-layer/keys';
 import { InMemoryKeyProvider } from '../src/in-memory.ts';
-import type { Curve, KeyInfo } from '@otl/keys';
+import type { Curve, KeyInfo } from '@open-transaction-layer/keys';
 
 /** Mistake 1: returns DER-encoded ECDSA — what AWS KMS and Key Vault do by default. */
 class DerSigningProvider extends InMemoryKeyProvider {

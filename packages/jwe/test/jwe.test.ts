@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { toPublicKeyJwk, type Curve } from '@otl/keys';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { toPublicKeyJwk, type Curve } from '@open-transaction-layer/keys';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import {
   EncryptionError,
   OtlJweError,

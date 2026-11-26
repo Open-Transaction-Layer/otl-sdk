@@ -29,16 +29,16 @@ security issues and belong here.
 
 ## What is deliberately not production-ready
 
-`@otl/keys-dev` and `@otl/cli` hold private key material in the process and on
+`@open-transaction-layer/keys-dev` and `@open-transaction-layer/cli` hold private key material in the process and on
 disk. This is stated in their manifests and their READMEs, and the CLI prints it on
 every command that touches the local keystore.
 Reports that those packages expose private keys to someone who already has the
 relevant filesystem or process access are describing their documented design
 rather than a vulnerability.
 
-A production deployment implements `KeyProvider` from `@otl/keys` against a
+A production deployment implements `KeyProvider` from `@open-transaction-layer/keys` against a
 KMS, an HSM or a Key Vault, and validates that implementation with
-`@otl/keys/conformance`.
+`@open-transaction-layer/keys/conformance`.
 
 ## Supported versions
 

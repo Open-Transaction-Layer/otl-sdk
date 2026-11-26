@@ -1,5 +1,5 @@
 /**
- * `@otl/jwe` — message encryption for the OTL Identity layer.
+ * `@open-transaction-layer/jwe` — message encryption for the OTL Identity layer.
  *
  * JWE Compact Serialization with ECDH-ES and A256GCM. The envelope is
  * provisional because OTL spec 3.1.1 defines key types but no envelope, and

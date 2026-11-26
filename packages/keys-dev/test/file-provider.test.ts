@@ -8,8 +8,8 @@ import { mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
-import { InvalidKeyError } from '@otl/keys';
-import { verifyWith } from '@otl/keys/node';
+import { InvalidKeyError } from '@open-transaction-layer/keys';
+import { verifyWith } from '@open-transaction-layer/keys/node';
 import { FileKeyProvider } from '../src/file.ts';
 
 const PASSPHRASE = 'correct horse battery staple';

@@ -23,8 +23,8 @@ import {
   verifySignature,
   type KeyProvider,
   type PublicKey,
-} from '@otl/keys';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+} from '@open-transaction-layer/keys';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { canonicalizeToBytes } from '../src/jcs.ts';
 import { createProof, verifyProof, type Document } from '../src/proof.ts';
 

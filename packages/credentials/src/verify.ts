@@ -20,8 +20,8 @@ import {
   type BitstringStatusListEntry,
   type Document,
   type StatusListCredential,
-} from '@otl/core';
-import type { PublicKey } from '@otl/keys';
+} from '@open-transaction-layer/core';
+import type { PublicKey } from '@open-transaction-layer/keys';
 import type { VerifiableCredential } from './credential.ts';
 import type { CredentialTypeRegistry } from './registry.ts';
 import type { TrustPerimeter } from './trust.ts';

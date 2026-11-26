@@ -28,10 +28,10 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
-import { type KeyProvider } from '@otl/keys';
-import { FileKeyProvider } from '@otl/keys-dev';
-import { parseDidLog, type DidLogEntry } from '@otl/core';
-import { TrustPerimeter, type TrustPerimeterData } from '@otl/credentials';
+import { type KeyProvider } from '@open-transaction-layer/keys';
+import { FileKeyProvider } from '@open-transaction-layer/keys-dev';
+import { parseDidLog, type DidLogEntry } from '@open-transaction-layer/core';
+import { TrustPerimeter, type TrustPerimeterData } from '@open-transaction-layer/credentials';
 import { CliError } from './errors.ts';
 
 export interface DidMeta {

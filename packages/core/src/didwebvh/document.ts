@@ -2,7 +2,12 @@
  * DID document construction (OTL spec 3).
  */
 
-import { toPublicKeyJwk, toPublicKeyMultibase, type KeyInfo, type PublicKey } from '@otl/keys';
+import {
+  toPublicKeyJwk,
+  toPublicKeyMultibase,
+  type KeyInfo,
+  type PublicKey,
+} from '@open-transaction-layer/keys';
 import { InvalidDocumentError } from '../errors.ts';
 import { CONTEXT, type DidDocument, type ServiceEntry, type VerificationMethod } from './types.ts';
 

@@ -54,7 +54,7 @@ export const otlIdentityContextV1 = (): Record<string, unknown> =>
  *
  * @example
  * ```ts
- * import { bundledDocumentLoader } from '@otl/credentials/context';
+ * import { bundledDocumentLoader } from '@open-transaction-layer/credentials/context';
  * const documentLoader = bundledDocumentLoader();
  * await jsonld.expand(credential, { documentLoader });
  * ```

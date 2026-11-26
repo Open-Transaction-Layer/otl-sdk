@@ -1,5 +1,5 @@
 /**
- * `@otl/core` — protocol logic for the OTL Identity layer.
+ * `@open-transaction-layer/core` — protocol logic for the OTL Identity layer.
  *
  * Canonicalization, hashing and proof construction live here rather than in a
  * key provider, so that two backends can never drift on how a signature input

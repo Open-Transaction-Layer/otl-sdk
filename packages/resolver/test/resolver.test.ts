@@ -6,7 +6,7 @@ import {
   createProof,
   statusEntryFor,
   type StatusListCredential,
-} from '@otl/core';
+} from '@open-transaction-layer/core';
 import {
   defaultRegistry,
   InMemoryStatusListMemory,
@@ -16,9 +16,9 @@ import {
   OTL_HOSTING_CREDENTIAL,
   OTL_LEI_CREDENTIAL,
   TrustPerimeter,
-} from '@otl/credentials';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
-import { createDid, keyFromKeyInfo, addService } from '@otl/core';
+} from '@open-transaction-layer/credentials';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
+import { createDid, keyFromKeyInfo, addService } from '@open-transaction-layer/core';
 import {
   assertFetchableUrl,
   isPrivateAddress,

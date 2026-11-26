@@ -7,9 +7,14 @@
  * unmistakably not real registrations.
  */
 
-import { Bitstring, buildStatusListCredential, statusEntryFor, type StatusListCredential } from '@otl/core';
-import { type PublicKey } from '@otl/keys';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import {
+  Bitstring,
+  buildStatusListCredential,
+  statusEntryFor,
+  type StatusListCredential,
+} from '@open-transaction-layer/core';
+import { type PublicKey } from '@open-transaction-layer/keys';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { leiCheckDigits } from '../src/lei/lei-code.ts';
 import type { LeiCredentialSubject } from '../src/lei/gleif.ts';
 

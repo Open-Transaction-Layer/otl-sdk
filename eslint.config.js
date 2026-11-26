@@ -18,7 +18,7 @@ export default tseslint.config(
       parserOptions: {
         // Type information comes from the root tsconfig.json, which covers every
         // package's src/ and test/. It inherits `customConditions: ["otl-source"]`
-        // from tsconfig.base.json, so workspace imports such as `@otl/keys`
+        // from tsconfig.base.json, so workspace imports such as `@open-transaction-layer/keys`
         // resolve to their TypeScript source here exactly as they do under
         // `tsc` and `node --conditions=otl-source`, with no build step needed.
         projectService: true,

@@ -3,8 +3,14 @@
  * fetch, and the trust perimeter that gates them (OTL spec 2.3, 4.4, 5.3, 6.1).
  */
 
-import { defaultRegistry, OTL_LEI_CREDENTIAL } from '@otl/credentials';
-import { fetchStatusList, resolveDid, resolveAssertionKey, validateDid, verifyWhois } from '@otl/resolver';
+import { defaultRegistry, OTL_LEI_CREDENTIAL } from '@open-transaction-layer/credentials';
+import {
+  fetchStatusList,
+  resolveDid,
+  resolveAssertionKey,
+  validateDid,
+  verifyWhois,
+} from '@open-transaction-layer/resolver';
 import { flag, optionalOption, requireOption, type ParsedArgs } from '../args.ts';
 import { CliError } from '../errors.ts';
 import type { Output } from '../output.ts';

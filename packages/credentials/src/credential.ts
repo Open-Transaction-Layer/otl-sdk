@@ -6,8 +6,8 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { createProof, type BitstringStatusListEntry, type Document } from '@otl/core';
-import type { KeyProvider } from '@otl/keys';
+import { createProof, type BitstringStatusListEntry, type Document } from '@open-transaction-layer/core';
+import type { KeyProvider } from '@open-transaction-layer/keys';
 import { InvalidCredentialError } from './errors.ts';
 import type { CredentialType } from './registry.ts';
 

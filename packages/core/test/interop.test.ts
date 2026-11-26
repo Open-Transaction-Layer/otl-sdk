@@ -30,7 +30,7 @@ import assert from 'node:assert/strict';
 import { createPublicKey, verify as nodeVerify } from 'node:crypto';
 import { describe, it } from 'node:test';
 import { resolveDIDFromLog } from 'didwebvh-ts';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { addKey, addService, createDid, deactivate, keyFromKeyInfo } from '../src/index.ts';
 import type { DidLogEntry } from '../src/didwebvh/types.ts';
 

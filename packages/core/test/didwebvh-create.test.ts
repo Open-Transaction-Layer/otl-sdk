@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { base58btcDecode, toPublicKeyMultibase } from '@otl/keys';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { base58btcDecode, toPublicKeyMultibase } from '@open-transaction-layer/keys';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { InvalidDocumentError } from '../src/errors.ts';
 import { canonicalizeToBytes } from '../src/jcs.ts';
 import { hashToBase58 } from '../src/multihash.ts';

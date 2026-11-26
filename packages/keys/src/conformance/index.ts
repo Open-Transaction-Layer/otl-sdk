@@ -1,12 +1,12 @@
 /**
  * Conformance kit for {@link KeyProvider} implementations.
  *
- * `@otl/keys` ships an abstraction and no production implementation. The
+ * `@open-transaction-layer/keys` ships an abstraction and no production implementation. The
  * correctness of every real deployment therefore lives in a bridge we do not
  * write, so we ship the suite that defines correct.
  *
  * ```ts
- * import { runKeyProviderConformance } from '@otl/keys/conformance';
+ * import { runKeyProviderConformance } from '@open-transaction-layer/keys/conformance';
  *
  * runKeyProviderConformance('our KMS bridge', () => new OurKmsKeyProvider(config));
  * ```

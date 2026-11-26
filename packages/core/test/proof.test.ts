@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { describe, it } from 'node:test';
-import { toMultibaseBase58, type Curve } from '@otl/keys';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { toMultibaseBase58, type Curve } from '@open-transaction-layer/keys';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { CryptosuiteMismatchError } from '../src/errors.ts';
 import { canonicalizeToBytes } from '../src/jcs.ts';
 import { assertCryptosuiteMatchesCurve, cryptosuiteForCurve } from '../src/cryptosuite.ts';

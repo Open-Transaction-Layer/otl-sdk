@@ -4,7 +4,7 @@
  */
 
 import { randomInt } from 'node:crypto';
-import type { KeyProvider } from '@otl/keys';
+import type { KeyProvider } from '@open-transaction-layer/keys';
 import { InvalidDocumentError } from '../errors.ts';
 import { createProof, type Document } from '../proof.ts';
 import { Bitstring } from './bitstring.ts';

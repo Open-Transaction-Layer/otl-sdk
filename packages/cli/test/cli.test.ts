@@ -5,10 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { promisify } from 'node:util';
-import { validateDidLog, parseDidLog } from '@otl/core';
-import { defaultRegistry, TrustPerimeter } from '@otl/credentials';
-import { FileKeyProvider } from '@otl/keys-dev';
-import { verifyWhois, type VerifiablePresentation } from '@otl/resolver';
+import { validateDidLog, parseDidLog } from '@open-transaction-layer/core';
+import { defaultRegistry, TrustPerimeter } from '@open-transaction-layer/credentials';
+import { FileKeyProvider } from '@open-transaction-layer/keys-dev';
+import { verifyWhois, type VerifiablePresentation } from '@open-transaction-layer/resolver';
 import { parseArgs } from '../src/args.ts';
 
 const exec = promisify(execFile);
@@ -310,7 +310,7 @@ describe('CLI - a failed update can be retried', () => {
       await otl(home, 'did', 'show', '--json'),
     );
     const agreement = document.verificationMethod.find((m) => m.id.endsWith('#agreement-key'));
-    const { toPublicKeyMultibase } = await import('@otl/keys');
+    const { toPublicKeyMultibase } = await import('@open-transaction-layer/keys');
     assert.equal(agreement?.publicKeyMultibase, toPublicKeyMultibase(leftover.publicKey));
   });
 
