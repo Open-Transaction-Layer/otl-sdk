@@ -1,7 +1,7 @@
 /**
  * `@open-transaction-layer/keys/node` — Node.js cryptographic helpers for provider authors.
  *
- * A `KeyProvider` implementation that holds key material in a KMS, an
+ * A {@link "keys/src"!KeyProvider} implementation that holds key material in a KMS, an
  * HSM or a Key Vault does not need any of this, because the remote service
  * performs the operations. A provider that handles `KeyObject`s locally —
  * the development providers in `@open-transaction-layer/keys-dev`, or a bridge that unwraps a
