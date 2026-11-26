@@ -156,7 +156,9 @@ describe('fuzz - JCS canonicalization', () => {
       { key: undefined },
       { '\udc00': 1 },
       Object.create(null) as object,
-      new (class Custom {})(),
+      new (class Custom {
+        readonly value = 1;
+      })(),
     ];
     const random = makeRandom(0x5eed02);
     for (let i = 0; i < ITERATIONS; i++) {
@@ -274,7 +276,7 @@ describe('fuzz - DID log parsing and validation', () => {
     const container = parent as Record<string | number, unknown>;
     if (random.next() < 0.25) {
       if (Array.isArray(parent)) parent.splice(Number(key), 1);
-      else delete container[key];
+      else Reflect.deleteProperty(container, key);
     } else {
       container[key] = randomHostileValue(random);
     }
@@ -286,7 +288,7 @@ describe('fuzz - DID log parsing and validation', () => {
     const text = entries.map((entry) => JSON.stringify(entry)).join('\n');
     const random = makeRandom(0x5eed06);
     for (let i = 0; i < ITERATIONS; i++) {
-      const chars = [...text];
+      const chars = Array.from(text);
       for (let n = 1 + random.int(5); n > 0; n--)
         chars[random.int(chars.length)] = random.pick(['"', '{', '}', '\n', '\\', '\u0000', 'x']);
       try {

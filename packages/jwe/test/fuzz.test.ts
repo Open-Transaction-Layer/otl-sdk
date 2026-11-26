@@ -31,6 +31,7 @@ function makeRandom(seed: number) {
 }
 
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+const ALPHABET_AND_DOT = [...Array.from(ALPHABET), '.'];
 
 describe('fuzz - JWE decryption', () => {
   it('rejects arbitrary five-segment strings with a JWE error and never crashes', async () => {
@@ -58,10 +59,10 @@ describe('fuzz - JWE decryption', () => {
       const original = encrypt({ plaintext: MESSAGE, recipientPublicKey: key.publicKey });
       const random = makeRandom(curve === 'X25519' ? 0x5eed12 : 0x5eed13);
       for (let i = 0; i < ITERATIONS; i++) {
-        const chars = [...original];
+        const chars = Array.from(original);
         for (let n = 1 + random.int(3); n > 0; n--) {
           const at = random.int(chars.length);
-          chars[at] = chars[at] === '.' ? random.pick(['x', '.']) : random.pick([...ALPHABET, '.']);
+          chars[at] = chars[at] === '.' ? random.pick(['x', '.']) : random.pick(ALPHABET_AND_DOT);
         }
         const damaged = chars.join('');
         try {
