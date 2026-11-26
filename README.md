@@ -64,6 +64,10 @@ No network access needed; the GLEIF record is supplied from a local fixture.
 
 Zero runtime dependencies anywhere, since everything is built on `node:crypto`.
 
+The [API reference](https://open-transaction-layer.github.io/otl-sdk/) is
+generated from the source on every merge to `main` and documents every exported
+function, class and type with its inputs, outputs and errors.
+
 ## Installing
 
 ```bash
@@ -79,6 +83,34 @@ runKeyProviderConformance('MyKmsProvider', () => new MyKmsProvider());
 
 Requires Node 22.12 or later, which is the oldest Node line still receiving
 security updates.
+
+## Verifying a release
+
+Every release is published to npm by this repository's release workflow, which
+starts only when a maintainer publishes a GitHub release for a commit on `main`
+and publishes only after a reviewer approves it, and npm records a provenance
+attestation that names the repository, the workflow and the commit the package
+was built from. The packages are published without any long-lived
+npm credential, because npm accepts only the workflow's short-lived identity.
+
+To check the packages in your own project, run this from the project root after
+installing:
+
+```bash
+npm audit signatures
+```
+
+It verifies the registry signature of every installed package and the
+provenance attestation of each package that has one, and it reports any package
+whose signature or attestation does not verify. The npm page of a package also
+shows a provenance badge that links to the attestation and from there to the
+exact commit and workflow run. Each release is a GitHub release whose tag is `v`
+followed by the version, such as `v0.2.0`, so the published contents can be
+compared with the source at that tag.
+
+Version 0.0.1 of each package is an empty placeholder that reserves the name and
+was not built by the release workflow, so it carries no provenance and contains
+no code.
 
 ## Developing
 
@@ -155,8 +187,8 @@ The ones that affect use:
 ## Contributing and licence
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), the
-[code of conduct](CODE_OF_CONDUCT.md) and the
-[security policy](SECURITY.md).
+[code of conduct](CODE_OF_CONDUCT.md), the
+[security policy](SECURITY.md) and [SUPPORT.md](SUPPORT.md).
 
 The code in this repository is licensed under [Apache-2.0](LICENSE). See
 [NOTICE](NOTICE) for third-party attribution. The specification lives in its
