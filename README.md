@@ -83,9 +83,10 @@ security updates.
 ## Verifying a release
 
 Every release is published to npm by this repository's release workflow, which
-runs only from `main` and only after a maintainer approves it, and npm records a
-provenance attestation that names the repository, the workflow and the commit
-the package was built from. The packages are published without any long-lived
+starts only when a maintainer publishes a GitHub release for a commit on `main`
+and publishes only after a reviewer approves it, and npm records a provenance
+attestation that names the repository, the workflow and the commit the package
+was built from. The packages are published without any long-lived
 npm credential, because npm accepts only the workflow's short-lived identity.
 
 To check the packages in your own project, run this from the project root after
@@ -99,9 +100,9 @@ It verifies the registry signature of every installed package and the
 provenance attestation of each package that has one, and it reports any package
 whose signature or attestation does not verify. The npm page of a package also
 shows a provenance badge that links to the attestation and from there to the
-exact commit and workflow run. Each release is tagged in this repository with
-the package name and version, such as `@open-transaction-layer/core@0.2.0`, so
-the published contents can be compared with the source at that tag.
+exact commit and workflow run. Each release is a GitHub release whose tag is `v`
+followed by the version, such as `v0.2.0`, so the published contents can be
+compared with the source at that tag.
 
 Version 0.0.1 of each package is an empty placeholder that reserves the name and
 was not built by the release workflow, so it carries no provenance and contains
