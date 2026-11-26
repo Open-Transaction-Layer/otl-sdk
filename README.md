@@ -80,6 +80,10 @@ runKeyProviderConformance('MyKmsProvider', () => new MyKmsProvider());
 Requires Node 22.12 or later, which is the oldest Node line still receiving
 security updates.
 
+The [API reference](https://open-transaction-layer.github.io/otl-sdk/) is
+generated from the source on every merge to `main` and documents every exported
+function, class and type with its inputs, outputs and errors.
+
 ## Developing
 
 ```bash

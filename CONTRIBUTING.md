@@ -15,6 +15,11 @@ npm run check
 `npm run check` runs the build, typecheck, lint, format check and the full test
 suite, which is the same set of steps CI runs.
 
+`npm run docs` builds the API reference into `api-docs/` from the doc comments in
+the source, and it fails on a broken link or an unresolvable type, so a new
+exported function or type should carry a doc comment that says what it takes,
+what it returns and what it throws.
+
 The workspace runs straight off TypeScript with no build step, through a custom
 `otl-source` export condition, so `npm test` is fast and needs nothing compiled
 first. The build exists to produce what gets published.

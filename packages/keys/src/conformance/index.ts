@@ -1,5 +1,5 @@
 /**
- * Conformance kit for {@link KeyProvider} implementations.
+ * Conformance kit for `KeyProvider` implementations.
  *
  * `@open-transaction-layer/keys` ships an abstraction and no production implementation. The
  * correctness of every real deployment therefore lives in a bridge we do not

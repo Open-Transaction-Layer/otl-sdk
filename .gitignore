@@ -13,3 +13,4 @@ dist/
 packages/*/.tsbuildinfo
 packages/*/LICENSE
 packages/*/NOTICE
+api-docs
