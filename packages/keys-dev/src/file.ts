@@ -8,7 +8,7 @@
  *
  * This is still a private key on a disk. It is appropriate for development and
  * for exercising the protocol end to end; it is not a custody solution.
- * Production deployments MUST bridge {@link KeyProvider} to a KMS or HSM.
+ * Production deployments MUST bridge {@link "keys/src"!KeyProvider} to a KMS or HSM.
  */
 
 import type { KeyObject } from 'node:crypto';
