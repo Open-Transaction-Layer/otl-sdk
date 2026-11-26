@@ -33,14 +33,15 @@ jobs:
     name: release
     needs: check
     runs-on: ubuntu-latest
-    # The npm token lives only in this environment, and the environment is
-    # configured to require a maintainer's approval before the job starts, so a
-    # merge to main alone can never publish.
+    # npm trusts this job through OIDC, scoped to this repository, this
+    # workflow file and this environment, so no npm token exists anywhere. The
+    # environment is configured to require a maintainer's approval before the
+    # job starts, so a merge to main alone can never publish.
     environment: release
     permissions:
       contents: write      # open and update the release pull request
       pull-requests: write
-      id-token: write      # mint the OIDC token npm provenance is signed with
+      id-token: write      # mint the OIDC token npm authenticates and signs provenance with
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -51,7 +52,7 @@ jobs:
           node-version: '24'
           cache: npm
           registry-url: https://registry.npmjs.org
-      # Install scripts of dependencies never run next to the publish token.
+      # Install scripts of dependencies never run in the job that can publish.
       - run: npm ci --ignore-scripts
 
       # Pending changesets are the signal that a release pull request is due.
@@ -71,7 +72,7 @@ jobs:
 
       # While changesets are pending, the versions and changelogs are bumped on
       # a release branch and proposed through a pull request. This step holds no
-      # npm token, because versioning needs none. The git token authenticates
+      # publish credential, because versioning needs none. The git token authenticates
       # the single push inline and is never written to .git/config. A pull
       # request opened with the workflow token does not trigger other
       # workflows, so a maintainer must push an empty commit to the branch or
@@ -105,13 +106,24 @@ jobs:
       # published and the tags that publishing creates are pushed. Provenance
       # comes from the id-token permission above plus publishConfig.provenance
       # in each manifest, so a consumer can verify a tarball was built from this
-      # repository rather than from someone's laptop. Only this step holds the
-      # npm token.
+      # repository rather than from someone's laptop. Publishing authenticates
+      # with the OIDC token that npm's trusted publisher configuration accepts,
+      # which needs npm 11.5.1 or later, so the step below fails early on an
+      # older npm instead of falling back to anything else.
+      - name: Require an npm that supports trusted publishing
+        if: steps.changesets.outputs.pending != 'true'
+        run: |
+          set -euo pipefail
+          version="$(npm --version)"
+          if [ "$(printf '%s\n11.5.1\n' "$version" | sort -V | head -n1)" != '11.5.1' ]; then
+            echo "npm $version is older than 11.5.1 and cannot publish with trusted publishing" >&2
+            exit 1
+          fi
+
       - name: Publish to npm
         if: steps.changesets.outputs.pending != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
         run: |
           set -euo pipefail
