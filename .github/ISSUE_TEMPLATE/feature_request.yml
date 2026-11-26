@@ -24,4 +24,4 @@ body:
     id: package
     attributes:
       label: Package this would affect
-      placeholder: "@otl/credentials"
+      placeholder: "@open-transaction-layer/credentials"

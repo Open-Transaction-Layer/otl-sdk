@@ -16,8 +16,8 @@
  * a commitment to the entry rather than part of it.
  */
 
-import type { KeyProvider } from '@otl/keys';
-import { toPublicKeyMultibase } from '@otl/keys';
+import type { KeyProvider } from '@open-transaction-layer/keys';
+import { toPublicKeyMultibase } from '@open-transaction-layer/keys';
 import { InvalidDocumentError } from '../errors.ts';
 import { createProof } from '../proof.ts';
 import { buildDidDocument, type DocumentKey } from './document.ts';
@@ -67,7 +67,7 @@ export interface CreatedDid {
  */
 function assertCurvePermitted(
   profile: MethodProfile,
-  curve: import('@otl/keys').Curve,
+  curve: import('@open-transaction-layer/keys').Curve,
   label: string,
   role: string,
 ): void {

@@ -2,9 +2,9 @@
  * Signing, verification and encryption commands.
  */
 
-import { signRaw, verifyRaw } from '@otl/core';
-import { decrypt, encrypt } from '@otl/jwe';
-import { resolveVerificationKey } from '@otl/resolver';
+import { signRaw, verifyRaw } from '@open-transaction-layer/core';
+import { decrypt, encrypt } from '@open-transaction-layer/jwe';
+import { resolveVerificationKey } from '@open-transaction-layer/resolver';
 import { optionalOption, requireOption, type ParsedArgs } from '../args.ts';
 import { CliError } from '../errors.ts';
 import type { Output } from '../output.ts';

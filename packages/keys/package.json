@@ -1,5 +1,5 @@
 {
-  "name": "@otl/keys",
+  "name": "@open-transaction-layer/keys",
   "version": "0.1.0",
   "type": "module",
   "description": "Abstract key-provider contract for the OTL Identity layer, with a conformance kit for validating KMS and HSM bridges.",

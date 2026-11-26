@@ -12,13 +12,13 @@ import {
   statusEntryFor,
   type BitstringStatusListEntry,
   type StatusListCredential,
-} from '@otl/core';
+} from '@open-transaction-layer/core';
 import {
   issueCredential,
   OtlHostingCredentialType,
   OtlLeiCredentialType,
   type VerifiableCredential,
-} from '@otl/credentials';
+} from '@open-transaction-layer/credentials';
 import { optionalOption, requireOption, type ParsedArgs } from '../args.ts';
 import { CliError } from '../errors.ts';
 import type { Output } from '../output.ts';

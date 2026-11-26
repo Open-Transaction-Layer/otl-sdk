@@ -1,7 +1,7 @@
 /**
  * Thin binding between the OTL curve model and `node:crypto`.
  *
- * Exposed to provider authors through `@otl/keys/node`, so that every
+ * Exposed to provider authors through `@open-transaction-layer/keys/node`, so that every
  * Node-based provider shares exactly one implementation of each primitive and
  * none of them contains raw algorithm names.
  *
@@ -128,7 +128,7 @@ export function verifyWith(publicKey: PublicKey, message: Uint8Array, signature:
   }
 }
 
-/** Raw ECDH shared secret Z. Key derivation and the envelope happen in `@otl/jwe`. */
+/** Raw ECDH shared secret Z. Key derivation and the envelope happen in `@open-transaction-layer/jwe`. */
 export function deriveSharedSecretWith(
   privateKey: KeyObject,
   curve: Curve,

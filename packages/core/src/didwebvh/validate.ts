@@ -26,7 +26,7 @@
  * evaluate a log with pre-rotation disabled would silently accept it.
  */
 
-import { fromPublicKeyMultibase, type PublicKey } from '@otl/keys';
+import { fromPublicKeyMultibase, type PublicKey } from '@open-transaction-layer/keys';
 import { canonicalizeToBytes } from '../jcs.ts';
 import { hashToBase58 } from '../multihash.ts';
 import { isProofObject, proofsOf, verifyProof, type DataIntegrityProof } from '../proof.ts';
@@ -123,7 +123,7 @@ export interface ValidateOptions {
    * (threat T-RES-02).
    *
    * This can only tighten validation, never loosen it. Callers rarely supply it
-   * directly; `@otl/resolver` looks it up from a `DidHeadMemory`.
+   * directly; `@open-transaction-layer/resolver` looks it up from a `DidHeadMemory`.
    */
   readonly known?: KnownDidHead;
   /**

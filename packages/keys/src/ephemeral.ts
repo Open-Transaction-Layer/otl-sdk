@@ -19,7 +19,7 @@ import { isKeyAgreementCurve, type Curve, type PublicKey } from './types.ts';
 export interface EphemeralAgreement {
   /** Public half, to be published in the message header so the recipient can derive. */
   readonly ephemeralPublicKey: PublicKey;
-  /** Raw shared secret Z. Key derivation happens in `@otl/jwe`. */
+  /** Raw shared secret Z. Key derivation happens in `@open-transaction-layer/jwe`. */
   readonly sharedSecret: Uint8Array;
 }
 

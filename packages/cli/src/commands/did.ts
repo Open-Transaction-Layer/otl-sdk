@@ -13,8 +13,8 @@ import {
   parseVersionId,
   validateDidLog,
   type ServiceEntry,
-} from '@otl/core';
-import { KeyAlreadyExistsError, type Curve, type KeyInfo } from '@otl/keys';
+} from '@open-transaction-layer/core';
+import { KeyAlreadyExistsError, type Curve, type KeyInfo } from '@open-transaction-layer/keys';
 import { flag, optionalOption, requireOption, type ParsedArgs } from '../args.ts';
 import { CliError } from '../errors.ts';
 import type { Output } from '../output.ts';
@@ -312,7 +312,7 @@ export async function didValidateLocal(args: ParsedArgs, store: Store, out: Outp
 // ---------------------------------------------------------------------------
 
 interface RotationContext {
-  readonly previousEntry: import('@otl/core').DidLogEntry;
+  readonly previousEntry: import('@open-transaction-layer/core').DidLogEntry;
   readonly provider: ReturnType<Store['keyProvider']>;
   readonly signingKeyLabel: string;
   readonly nextKeyLabel: string;
@@ -326,15 +326,15 @@ interface RotationContext {
  * rotate-every-entry policy every entry rotates the DID Management Key: the
  * entry is signed by the key the previous entry committed to, and commits to a
  * newly generated offline key. See the note on `RotationPolicy` in
- * `@otl/core`.
+ * `@open-transaction-layer/core`.
  */
 async function withRotation(
   args: ParsedArgs,
   store: Store,
   meta: DidMeta,
   out: Output,
-  run: (context: RotationContext) => Promise<import('@otl/core').DidLogEntry>,
-): Promise<import('@otl/core').DidLogEntry> {
+  run: (context: RotationContext) => Promise<import('@open-transaction-layer/core').DidLogEntry>,
+): Promise<import('@open-transaction-layer/core').DidLogEntry> {
   const entries = store.readLog(meta.scid);
   const previousEntry = entries.at(-1);
   if (previousEntry === undefined) {

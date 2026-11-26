@@ -1,4 +1,4 @@
-# `@otl/credentials`
+# `@open-transaction-layer/credentials`
 
 Verifiable credentials for the OTL Identity layer: a pluggable credential-type
 registry, the LEI and hosting credential types, the local trust perimeter and
@@ -31,7 +31,7 @@ This package ships the context as an asset and resolves it from disk:
 
 ```ts
 import jsonld from 'jsonld';
-import { bundledDocumentLoader } from '@otl/credentials/context';
+import { bundledDocumentLoader } from '@open-transaction-layer/credentials/context';
 
 const documentLoader = bundledDocumentLoader({ fallback: yourW3cLoader });
 await jsonld.expand(credential, { documentLoader });

@@ -5,7 +5,7 @@
     { "repo": "Open-Transaction-Layer/otl-sdk" }
   ],
   "commit": false,
-  "fixed": [["@otl/*"]],
+  "fixed": [["@open-transaction-layer/*"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

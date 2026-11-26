@@ -1,5 +1,5 @@
 /**
- * `@otl/cli` — NON-PRODUCTION command line tool for the OTL Identity layer.
+ * `@open-transaction-layer/cli` — NON-PRODUCTION command line tool for the OTL Identity layer.
  */
 
 import { parseArgs, flag, type ParsedArgs } from './args.ts';

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 import { SigningError, signRaw, verifyRaw } from '../src/signing.ts';
 
 const MESSAGE = 'settlement instruction 2026-01-01';

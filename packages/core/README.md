@@ -1,4 +1,4 @@
-# `@otl/core`
+# `@open-transaction-layer/core`
 
 Protocol logic for the OTL Identity layer: canonicalization, hashing and proof construction.
 
@@ -8,20 +8,20 @@ Canonicalization and proof assembly live here rather than in a key provider, so 
 
 ## Subpath imports
 
-The root `@otl/core` entry point re-exports everything the package offers. Two of the areas are large enough to be worth importing on their own, which keeps a consumer's imports narrow and makes it obvious from an import line which concern a file depends on.
+The root `@open-transaction-layer/core` entry point re-exports everything the package offers. Two of the areas are large enough to be worth importing on their own, which keeps a consumer's imports narrow and makes it obvious from an import line which concern a file depends on.
 
 | Import                 | Use it when you need                                                                     | Typical symbols                                           |
 | ---------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| `@otl/core/didwebvh`   | to create, update or validate a `did:webvh` log, without the proof or credential helpers | `createDid`, `appendEntry`, `validateDidLog`              |
-| `@otl/core/statuslist` | to build or read Bitstring Status List credentials                                       | `Bitstring`, `buildStatusListCredential`, `allocateIndex` |
+| `@open-transaction-layer/core/didwebvh`   | to create, update or validate a `did:webvh` log, without the proof or credential helpers | `createDid`, `appendEntry`, `validateDidLog`              |
+| `@open-transaction-layer/core/statuslist` | to build or read Bitstring Status List credentials                                       | `Bitstring`, `buildStatusListCredential`, `allocateIndex` |
 
 ```ts
 // Narrow imports: each resolves only the module it names.
-import { buildStatusListCredential } from '@otl/core/statuslist';
-import { createDid } from '@otl/core/didwebvh';
+import { buildStatusListCredential } from '@open-transaction-layer/core/statuslist';
+import { createDid } from '@open-transaction-layer/core/didwebvh';
 
 // The root entry point exports every symbol in the package.
-import { canonicalize, createProof } from '@otl/core';
+import { canonicalize, createProof } from '@open-transaction-layer/core';
 ```
 
 Prefer a subpath when you only use one of these areas, and use the root import when you work across both or need JCS canonicalization, Data Integrity proofs or multihash helpers, which are only available from the root. Each symbol is the same implementation whichever way you import it.
@@ -31,7 +31,7 @@ Prefer a subpath when you only use one of these areas, and use the root import w
 ## JCS canonicalization (RFC 8785)
 
 ```ts
-import { canonicalize, canonicalizeToBytes } from '@otl/core';
+import { canonicalize, canonicalizeToBytes } from '@open-transaction-layer/core';
 
 canonicalize({ b: 2, a: 1 }); // '{"a":1,"b":2}'
 ```
@@ -56,7 +56,7 @@ Verified against RFC 8785 Appendix B.
 ## Data Integrity proofs
 
 ```ts
-import { createProof, verifyProof } from '@otl/core';
+import { createProof, verifyProof } from '@open-transaction-layer/core';
 
 const secured = await createProof({
   document: credential,

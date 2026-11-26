@@ -35,7 +35,7 @@ import {
   type KeyInfo,
   type KeyProvider,
   type PublicKey,
-} from '@otl/keys';
+} from '@open-transaction-layer/keys';
 import { InvalidDocumentError } from '../errors.ts';
 import { createProof } from '../proof.ts';
 import { buildDidDocument, type DocumentKey } from './document.ts';

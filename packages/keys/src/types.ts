@@ -1,7 +1,7 @@
 /**
  * Core value types for the OTL key layer.
  *
- * These types are shared between `@otl/core` and every KeyProvider
+ * These types are shared between `@open-transaction-layer/core` and every KeyProvider
  * implementation, including bridges written by consumers of this SDK.
  * They are deliberately free of any backend-specific concepts.
  */
@@ -28,7 +28,7 @@ export const isKeyAgreementCurve = (c: Curve): boolean => KEY_AGREEMENT_CURVES.i
  * A reference to a key held by some provider.
  *
  * `label` is the stable logical name the caller chose (e.g. `did-management`).
- * `providerRef` is opaque to `@otl/core`: a bridge may store a KMS key ARN,
+ * `providerRef` is opaque to `@open-transaction-layer/core`: a bridge may store a KMS key ARN,
  * a Key Vault key URL, a PKCS#11 CKA_ID, or a file path there. Core code MUST
  * NOT parse or interpret it.
  */

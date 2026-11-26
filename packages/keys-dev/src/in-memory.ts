@@ -7,20 +7,24 @@
  */
 
 import type { KeyObject } from 'node:crypto';
-import { KeyAlreadyExistsError, KeyNotFoundError, UnsupportedOperationError } from '@otl/keys';
+import {
+  KeyAlreadyExistsError,
+  KeyNotFoundError,
+  UnsupportedOperationError,
+} from '@open-transaction-layer/keys';
 import {
   deriveSharedSecretWith,
   exportPkcs8,
   generateKeyObject,
   publicKeyFrom,
   signWith,
-} from '@otl/keys/node';
+} from '@open-transaction-layer/keys/node';
 import {
   KeyProvider,
   type DerivesSharedSecrets,
   type ExportsPrivateKeys,
   type GeneratesKeys,
-} from '@otl/keys';
+} from '@open-transaction-layer/keys';
 import {
   isKeyAgreementCurve,
   isSigningCurve,
@@ -30,7 +34,7 @@ import {
   type KeyInfo,
   type ProviderCapabilities,
   type PublicKey,
-} from '@otl/keys';
+} from '@open-transaction-layer/keys';
 
 interface StoredKey {
   readonly info: KeyInfo;

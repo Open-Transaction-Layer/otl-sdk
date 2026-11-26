@@ -1,4 +1,4 @@
-# `@otl/keys-dev`
+# `@open-transaction-layer/keys-dev`
 
 **Non-production** `KeyProvider` implementations for the OTL Identity layer.
 
@@ -8,13 +8,13 @@
 
 This package exists so that the CLI, the test suite and the examples can run
 without a key management service standing behind them. It is published
-separately from [`@otl/keys`](../keys) precisely so that depending on the
+separately from [`@open-transaction-layer/keys`](../keys) precisely so that depending on the
 `KeyProvider` contract never drags private key handling into a production
 dependency tree, and so that a dependency listing makes the distinction
 visible to anyone reviewing it.
 
 A production deployment implements `KeyProvider` against a KMS, an HSM or a
-Key Vault and validates that implementation with `@otl/keys/conformance`.
+Key Vault and validates that implementation with `@open-transaction-layer/keys/conformance`.
 
 ## Providers
 
@@ -32,7 +32,7 @@ exists in process memory whenever the provider signs.
 ## Usage
 
 ```ts
-import { InMemoryKeyProvider } from '@otl/keys-dev';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
 
 const keys = new InMemoryKeyProvider();
 await keys.generateKey('did-update-key', 'Ed25519');

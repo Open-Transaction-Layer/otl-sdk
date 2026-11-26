@@ -1,9 +1,9 @@
 /**
  * The packaging contract for the JSON-LD context.
  *
- * jsonld.test.ts in @otl/core proves the context defines the right terms.
+ * jsonld.test.ts in @open-transaction-layer/core proves the context defines the right terms.
  * What this file proves is narrower and is about distribution: that a
- * consumer who installs @otl/credentials and nothing else can resolve the
+ * consumer who installs @open-transaction-layer/credentials and nothing else can resolve the
  * context offline. Before the context moved inside this package it lived at
  * the repository root, outside every published artefact, so an installed
  * copy shipped no context at all and expansion silently dropped the payload.

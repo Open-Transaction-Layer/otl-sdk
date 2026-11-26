@@ -34,9 +34,9 @@ import { DataIntegrityProof } from '@digitalbazaar/data-integrity';
 import { createSignCryptosuite } from '@digitalbazaar/eddsa-jcs-2022-cryptosuite';
 import * as Ed25519Multikey from '@digitalbazaar/ed25519-multikey';
 import jsigs from 'jsonld-signatures';
-import { fromMultibaseBase58, toPublicKeyMultibase, type PublicKey } from '@otl/keys';
-import { InMemoryKeyProvider } from '@otl/keys-dev';
-// Reaching into @otl/keys internals: importing a raw private key is
+import { fromMultibaseBase58, toPublicKeyMultibase, type PublicKey } from '@open-transaction-layer/keys';
+import { InMemoryKeyProvider } from '@open-transaction-layer/keys-dev';
+// Reaching into @open-transaction-layer/keys internals: importing a raw private key is
 // deliberately unsupported by the public API, and this harness needs both
 // implementations holding the same key. A test may do this; a caller may not.
 import { importPkcs8, publicKeyFrom, signWith } from '../../keys/src/nodecrypto.ts';

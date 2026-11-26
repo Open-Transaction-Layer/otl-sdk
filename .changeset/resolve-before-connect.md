@@ -1,6 +1,6 @@
 ---
-"@otl/resolver": minor
-"@otl/cli": minor
+"@open-transaction-layer/resolver": minor
+"@open-transaction-layer/cli": minor
 ---
 
 **Breaking:** private-address refusal is now on by default, so a resolver no longer fetches from a loopback, link-local, private or otherwise non-public address unless it is told to. Pass `blockPrivateAddresses: false` to the resolver functions, or `--allow-private-addresses` on the command line, to reach `localhost` during development. The command line flag `--block-private-addresses` is replaced by that opt-out and is now ignored.

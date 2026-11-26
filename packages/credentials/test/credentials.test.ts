@@ -464,7 +464,7 @@ describe('validation chain (spec 5.3)', () => {
       ...setup.statusList,
       credentialSubject: {
         ...setup.statusList.credentialSubject,
-        encodedList: (await import('@otl/core')).Bitstring.create().encode(),
+        encodedList: (await import('@open-transaction-layer/core')).Bitstring.create().encode(),
       },
     };
     const result = await verifyCredential({
@@ -964,7 +964,7 @@ describe('OtlHostingCredential (spec 4.12-4.17)', () => {
     // validateSubject must bite on credentials we receive, not only on ours:
     // an attacker signs their own, so issuance-time checks protect nobody.
     const setup = await issuerSetup();
-    const { createProof } = await import('@otl/core');
+    const { createProof } = await import('@open-transaction-layer/core');
     const credential = await createProof({
       document: {
         '@context': ['https://www.w3.org/ns/credentials/v2'],
@@ -1102,7 +1102,7 @@ describe('validation chain - hostile credentials', () => {
    */
   async function signRaw(body: Record<string, unknown>) {
     const setup = await issuerSetup();
-    const { createProof } = await import('@otl/core');
+    const { createProof } = await import('@open-transaction-layer/core');
     const credential = await createProof({
       document: body,
       provider: setup.provider,

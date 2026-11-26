@@ -1,8 +1,8 @@
 /**
- * Errors raised by `@otl/jwe`.
+ * Errors raised by `@open-transaction-layer/jwe`.
  *
  * The package carries its own base class rather than extending `OtlCoreError`
- * from `@otl/core`, because depending on the protocol core for one small base
+ * from `@open-transaction-layer/core`, because depending on the protocol core for one small base
  * class would drag DID and credential machinery into a package that has
  * nothing to do with either.
  */
