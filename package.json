@@ -13,6 +13,7 @@
     "build": "npm run sync-legal && tsc --build tsconfig.build.json",
     "check": "npm run build && npm run typecheck && npm run lint && npm run format:check && npm test",
     "clean": "tsc --build tsconfig.build.json --clean",
+    "docs": "typedoc",
     "format": "prettier --write \"**/*.{ts,mjs,js}\"",
     "format:check": "prettier --check \"**/*.{ts,mjs,js}\"",
     "lint": "eslint . --max-warnings 0",
@@ -31,6 +32,7 @@
     "eslint": "10.15.0",
     "globals": "17.14.0",
     "prettier": "3.10.1",
+    "typedoc": "0.28.20",
     "typescript": "5.9.3",
     "typescript-eslint": "8.73.0"
   }
